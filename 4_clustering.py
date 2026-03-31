@@ -31,7 +31,9 @@ print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns from {INPUT_FILE}")
 # ── Determine if we have embeddings ──────────────────────────────────────
 pca_cols = [c for c in df.columns if c.startswith("pca_")]
 has_embeddings = len(pca_cols) > 0
-print(f"Embedding PCA columns found: {len(pca_cols)} → {'full mode' if has_embeddings else 'fallback mode'}")
+print(
+    f"Embedding PCA columns found: {len(pca_cols)} → {'full mode' if has_embeddings else 'fallback mode'}"
+)
 
 # ── Build clustering feature matrix ─────────────────────────────────────
 if has_embeddings:
@@ -42,18 +44,22 @@ else:
     print("Building fallback feature matrix (TF-IDF keywords + numeric)")
 
     # TF-IDF on keywords (join per-paper keywords into a single string)
-    keyword_texts = df.select(
-        pl.col("keywords").list.join(" ")
-    ).to_series().to_list()
+    keyword_texts = df.select(pl.col("keywords").list.join(" ")).to_series().to_list()
 
     tfidf = TfidfVectorizer(max_features=500, stop_words="english")
     tfidf_matrix = tfidf.fit_transform(keyword_texts).toarray()
 
     # Numeric features
     numeric_cols = [
-        "rating_mean", "soundness_mean", "presentation_mean",
-        "contribution_mean", "confidence_mean", "rating_std",
-        "n_reviewers", "n_replies", "wc_review_mean",
+        "rating_mean",
+        "soundness_mean",
+        "presentation_mean",
+        "contribution_mean",
+        "confidence_mean",
+        "rating_std",
+        "n_reviewers",
+        "n_replies",
+        "wc_review_mean",
         "strengths_weaknesses_ratio",
     ]
     numeric_matrix = df.select(numeric_cols).to_numpy()
@@ -61,7 +67,9 @@ else:
     numeric_scaled = scaler.fit_transform(numeric_matrix)
 
     X = np.hstack([tfidf_matrix, numeric_scaled])
-    print(f"Fallback feature matrix: {X.shape} (TF-IDF: {tfidf_matrix.shape[1]}, numeric: {numeric_scaled.shape[1]})")
+    print(
+        f"Fallback feature matrix: {X.shape} (TF-IDF: {tfidf_matrix.shape[1]}, numeric: {numeric_scaled.shape[1]})"
+    )
 
 # ══════════════════════════════════════════════════════════════════════════
 # HDBSCAN (primary)
@@ -90,8 +98,10 @@ for min_size in [15, 25, 50, 75]:
     else:
         score = -1
 
-    print(f"  min_cluster_size={min_size:3d}: {n_clusters:3d} clusters, "
-          f"noise={noise_frac:.1%}, silhouette={score:.3f}")
+    print(
+        f"  min_cluster_size={min_size:3d}: {n_clusters:3d} clusters, "
+        f"noise={noise_frac:.1%}, silhouette={score:.3f}"
+    )
 
     if score > best_score:
         best_score = score
@@ -99,6 +109,7 @@ for min_size in [15, 25, 50, 75]:
         best_labels = labels
 
 print(f"\nBest HDBSCAN: min_cluster_size={best_min_size}, silhouette={best_score:.3f}")
+assert best_labels is not None, "HDBSCAN produced no valid clustering"
 hdbscan_labels = best_labels
 n_hdbscan = len(set(hdbscan_labels)) - (1 if -1 in hdbscan_labels else 0)
 
@@ -166,28 +177,33 @@ for cid in cluster_ids:
     rep_papers = cluster_df[rep_indices.tolist()]
 
     # Mean rating
-    mean_rating = cluster_df["rating_mean"].mean()
+    mean_rating_val = cluster_df["rating_mean"].mean()
+    mean_rating: float = (
+        mean_rating_val if isinstance(mean_rating_val, (int, float)) else 0.0
+    )  # type: ignore[assignment]
 
     label_name = "NOISE" if cid == -1 else f"Cluster {cid}"
-    cluster_summaries.append({
-        "cluster_id": cid,
-        "label": label_name,
-        "size": n,
-        "mean_rating": round(mean_rating, 2),
-        "top_keywords": ", ".join(top_kw),
-        "top_areas": ", ".join(top_areas),
-    })
+    cluster_summaries.append(
+        {
+            "cluster_id": cid,
+            "label": label_name,
+            "size": n,
+            "mean_rating": round(mean_rating, 2),
+            "top_keywords": ", ".join(top_kw),
+            "top_areas": ", ".join(top_areas),
+        }
+    )
 
     if cid != -1 or n < 200:
         print(f"\n--- {label_name} (n={n}, mean_rating={mean_rating:.2f}) ---")
         print(f"  Keywords: {', '.join(top_kw)}")
         print(f"  Areas: {', '.join(top_areas)}")
-        print(f"  Representative papers:")
+        print("  Representative papers:")
         for row in rep_papers.iter_rows(named=True):
             print(f"    - {row['title'][:80]}  (rating={row['rating_mean']:.1f})")
 
 summary_df = pl.DataFrame(cluster_summaries)
-print(f"\n=== Cluster Size Distribution ===")
+print("\n=== Cluster Size Distribution ===")
 print(summary_df.sort("size", descending=True))
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -208,6 +224,7 @@ if centroids:
 
     # Distance from each paper to each centroid
     from scipy.spatial.distance import cdist
+
     all_dists = cdist(X, centroid_matrix, metric="euclidean")
 
     # Bridge papers: close to 2+ centroids
@@ -221,8 +238,10 @@ if centroids:
     for idx in bridge_idx:
         closest = np.argsort(all_dists[idx])[:2]
         c1, c2 = centroid_ids[closest[0]], centroid_ids[closest[1]]
-        print(f"  ratio={bridge_ratio[idx]:.3f}: clusters [{c1}, {c2}] "
-              f"'{df['title'][int(idx)][:70]}'")
+        print(
+            f"  ratio={bridge_ratio[idx]:.3f}: clusters [{c1}, {c2}] "
+            f"'{df['title'][int(idx)][:70]}'"
+        )
 
     # Store bridge scores
     df_clustered = df_clustered.with_columns(
@@ -232,18 +251,20 @@ if centroids:
 
 # ── Noise point analysis ────────────────────────────────────────────────
 noise_mask = hdbscan_labels == -1
-n_noise = noise_mask.sum()
+n_noise = int(noise_mask.sum())
 if n_noise > 0:
     noise_df = df_clustered.filter(pl.Series(noise_mask))
-    print(f"\n=== Noise Points: {n_noise} ({n_noise/len(df)*100:.1f}%) ===")
+    print(f"\n=== Noise Points: {n_noise} ({n_noise / len(df) * 100:.1f}%) ===")
     noise_areas = noise_df.group_by("primary_area").len().sort("len", descending=True)
     print("Top areas in noise:")
     print(noise_areas.head(5))
-    print(f"Mean rating (noise): {noise_df['rating_mean'].mean():.2f} "
-          f"vs overall: {df['rating_mean'].mean():.2f}")
+    print(
+        f"Mean rating (noise): {noise_df['rating_mean'].mean():.2f} "
+        f"vs overall: {df['rating_mean'].mean():.2f}"
+    )
 
 # ── Save ─────────────────────────────────────────────────────────────────
 df_clustered.write_parquet("iclr_2026_clustered.parquet")
 summary_df.write_parquet("cluster_summary.parquet")
-print(f"\nSaved clustering results to iclr_2026_clustered.parquet")
-print(f"Saved cluster summary to cluster_summary.parquet")
+print("\nSaved clustering results to iclr_2026_clustered.parquet")
+print("Saved cluster summary to cluster_summary.parquet")

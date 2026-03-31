@@ -19,24 +19,15 @@ print("✓ Shape, nulls, uniqueness OK")
 
 # ── 2. Identifier consistency ────────────────────────────────────────────
 # site should contain openreview_id, pdf_link should be site with forum→pdf
-id_in_site = (
-    df.select(
-        (pl.col("site").str.contains(pl.col("openreview_id"))).all()
-    )
-    .item()
-)
-id_in_pdf = (
-    df.select(
-        (pl.col("pdf_link").str.contains(pl.col("openreview_id"))).all()
-    )
-    .item()
-)
-pdf_from_site = (
-    df.select(
-        (pl.col("site").str.replace("forum", "pdf") == pl.col("pdf_link")).all()
-    )
-    .item()
-)
+id_in_site = df.select(
+    (pl.col("site").str.contains(pl.col("openreview_id"))).all()
+).item()
+id_in_pdf = df.select(
+    (pl.col("pdf_link").str.contains(pl.col("openreview_id"))).all()
+).item()
+pdf_from_site = df.select(
+    (pl.col("site").str.replace("forum", "pdf") == pl.col("pdf_link")).all()
+).item()
 assert id_in_site, "openreview_id not found in site URL"
 assert id_in_pdf, "openreview_id not found in pdf_link"
 assert pdf_from_site, "pdf_link != site with forum→pdf"
@@ -69,19 +60,32 @@ for raw_col, avg_col in avg_pairs:
     recomputed = df.select(
         recomputed_mean=pl.col(raw_col).list.mean(),
         # ddof=1 (sample std) — Polars default in list context
-        recomputed_std_ddof1=pl.col(raw_col).list.eval(
-            pl.element().cast(pl.Float64).std(ddof=1)
-        ).list.first(),
+        recomputed_std_ddof1=pl.col(raw_col)
+        .list.eval(pl.element().cast(pl.Float64).std(ddof=1))
+        .list.first(),
         # ddof=0 (population std)
-        recomputed_std_ddof0=pl.col(raw_col).list.eval(
-            pl.element().cast(pl.Float64).std(ddof=0)
-        ).list.first(),
+        recomputed_std_ddof0=pl.col(raw_col)
+        .list.eval(pl.element().cast(pl.Float64).std(ddof=0))
+        .list.first(),
         stored_mean=pl.col(avg_col).list.get(0),
         stored_std=pl.col(avg_col).list.get(1),
     )
-    mean_diff = (recomputed["recomputed_mean"] - recomputed["stored_mean"]).abs().max()
-    std_diff_ddof1 = (recomputed["recomputed_std_ddof1"] - recomputed["stored_std"]).abs().max()
-    std_diff_ddof0 = (recomputed["recomputed_std_ddof0"] - recomputed["stored_std"]).abs().max()
+    mean_diff_val = (
+        (recomputed["recomputed_mean"] - recomputed["stored_mean"]).abs().max()
+    )
+    mean_diff: float = mean_diff_val if isinstance(mean_diff_val, (int, float)) else 0.0  # type: ignore[assignment]
+    std_ddof1_val = (
+        (recomputed["recomputed_std_ddof1"] - recomputed["stored_std"]).abs().max()
+    )
+    std_diff_ddof1: float = (
+        std_ddof1_val if isinstance(std_ddof1_val, (int, float)) else 0.0
+    )  # type: ignore[assignment]
+    std_ddof0_val = (
+        (recomputed["recomputed_std_ddof0"] - recomputed["stored_std"]).abs().max()
+    )
+    std_diff_ddof0: float = (
+        std_ddof0_val if isinstance(std_ddof0_val, (int, float)) else 0.0
+    )  # type: ignore[assignment]
     # Pick whichever ddof matches better
     if std_diff_ddof1 <= std_diff_ddof0:
         std_diff = std_diff_ddof1
@@ -90,7 +94,10 @@ for raw_col, avg_col in avg_pairs:
         std_diff = std_diff_ddof0
         ddof_used = "ddof=0"
     status = "✓" if mean_diff < 0.01 and std_diff < 0.01 else "✗"
-    print(f"  {status} {raw_col}: mean_diff={mean_diff:.6f}, std_diff={std_diff:.6f} ({ddof_used})")
+    print(
+        f"  {status} {raw_col}: mean_diff={mean_diff:.6f}, std_diff={std_diff:.6f} ({ddof_used})"
+    )
+
 
 # ── 5. Validate corr_rating_confidence ───────────────────────────────────
 # Pearson correlation between rating and confidence per paper
@@ -102,6 +109,7 @@ def pearson_corr(ratings: list[int], confs: list[int]) -> float | None:
         return None
     return float(np.corrcoef(r, c)[0, 1])
 
+
 corr_check = df.select("rating", "confidence", "corr_rating_confidence")
 recomputed_corrs = [
     pearson_corr(row[0], row[1])
@@ -110,29 +118,39 @@ recomputed_corrs = [
 stored_corrs = corr_check["corr_rating_confidence"].to_list()
 
 diffs = [
-    abs(r - s) for r, s in zip(recomputed_corrs, stored_corrs)
+    abs(r - s)
+    for r, s in zip(recomputed_corrs, stored_corrs)
     if r is not None and s is not None and not (np.isnan(r) or np.isnan(s))
 ]
 max_corr_diff = max(diffs) if diffs else 0.0
 print(f"\ncorr_rating_confidence max recomputation diff: {max_corr_diff:.6f}")
-print(f"  Papers with undefined correlation: {sum(1 for r in recomputed_corrs if r is None)}")
+print(
+    f"  Papers with undefined correlation: {sum(1 for r in recomputed_corrs if r is None)}"
+)
 
 # ── 6. Reviewer count consistency ────────────────────────────────────────
 # All raw list columns should have the same length per paper
 raw_list_cols = [
-    "rating", "soundness", "presentation", "contribution", "confidence",
-    "wc_review", "wc_summary", "wc_strengths", "wc_weaknesses", "wc_questions",
+    "rating",
+    "soundness",
+    "presentation",
+    "contribution",
+    "confidence",
+    "wc_review",
+    "wc_summary",
+    "wc_strengths",
+    "wc_weaknesses",
+    "wc_questions",
 ]
-lengths = df.select(
-    [pl.col(c).list.len().alias(f"{c}_len") for c in raw_list_cols]
-)
+lengths = df.select([pl.col(c).list.len().alias(f"{c}_len") for c in raw_list_cols])
 # Check all lengths equal within each row
 first_len = lengths.columns[0]
 all_consistent = all(
-    (lengths[first_len] == lengths[c]).all()
-    for c in lengths.columns[1:]
+    (lengths[first_len] == lengths[c]).all() for c in lengths.columns[1:]
 )
-print(f"\nReviewer count consistency across {len(raw_list_cols)} list columns: {'✓' if all_consistent else '✗'}")
+print(
+    f"\nReviewer count consistency across {len(raw_list_cols)} list columns: {'✓' if all_consistent else '✗'}"
+)
 
 reviewer_counts = lengths[first_len].value_counts().sort("count", descending=True)
 print(f"Reviewer count distribution:\n{reviewer_counts}")
@@ -143,13 +161,17 @@ authors_elem1_all_zero = (
     df.select(pl.col("authors#_avg").list.get(1) == 0).to_series().all()
 )
 print(f"\nauthors#_avg[1] always 0: {authors_elem1_all_zero}")
-print(f"authors#_avg[0] range: {df.select(pl.col('authors#_avg').list.get(0)).to_series().min()} - {df.select(pl.col('authors#_avg').list.get(0)).to_series().max()}")
+print(
+    f"authors#_avg[0] range: {df.select(pl.col('authors#_avg').list.get(0)).to_series().min()} - {df.select(pl.col('authors#_avg').list.get(0)).to_series().max()}"
+)
 
 replies_elem1_all_zero = (
     df.select(pl.col("replies_avg").list.get(1) == 0).to_series().all()
 )
 print(f"replies_avg[1] always 0: {replies_elem1_all_zero}")
-print(f"replies_avg[0] range: {df.select(pl.col('replies_avg').list.get(0)).to_series().min()} - {df.select(pl.col('replies_avg').list.get(0)).to_series().max()}")
+print(
+    f"replies_avg[0] range: {df.select(pl.col('replies_avg').list.get(0)).to_series().min()} - {df.select(pl.col('replies_avg').list.get(0)).to_series().max()}"
+)
 
 # ══════════════════════════════════════════════════════════════════════════
 # FEATURE ENGINEERING
@@ -176,17 +198,21 @@ for col in score_cols:
     )
 
 # ── Reviewer count, replies, authors ─────────────────────────────────────
-unpack_exprs.extend([
-    pl.col("rating").list.len().alias("n_reviewers"),
-    pl.col("replies_avg").list.get(0).alias("n_replies"),
-    pl.col("authors#_avg").list.get(0).alias("n_authors"),
-])
+unpack_exprs.extend(
+    [
+        pl.col("rating").list.len().alias("n_reviewers"),
+        pl.col("replies_avg").list.get(0).alias("n_replies"),
+        pl.col("authors#_avg").list.get(0).alias("n_authors"),
+    ]
+)
 
 # ── Engagement proxies ───────────────────────────────────────────────────
-unpack_exprs.extend([
-    pl.col("wc_review").list.sum().alias("total_review_wc"),
-    # mean questions wc already available as wc_questions_mean (above)
-])
+unpack_exprs.extend(
+    [
+        pl.col("wc_review").list.sum().alias("total_review_wc"),
+        # mean questions wc already available as wc_questions_mean (above)
+    ]
+)
 
 # ── Text for embedding ───────────────────────────────────────────────────
 unpack_exprs.append(
@@ -198,20 +224,23 @@ features = df.with_columns(unpack_exprs)
 # ── Ratios (computed after unpacking) ────────────────────────────────────
 features = features.with_columns(
     # strengths-to-weaknesses wc ratio (use means)
-    (pl.col("wc_strengths_mean") / pl.col("wc_weaknesses_mean"))
-    .alias("strengths_weaknesses_ratio"),
+    (pl.col("wc_strengths_mean") / pl.col("wc_weaknesses_mean")).alias(
+        "strengths_weaknesses_ratio"
+    ),
     # questions-to-review-length ratio
-    (pl.col("wc_questions_mean") / pl.col("wc_review_mean"))
-    .alias("questions_review_ratio"),
+    (pl.col("wc_questions_mean") / pl.col("wc_review_mean")).alias(
+        "questions_review_ratio"
+    ),
 )
 
 # ── Area-normalized z-scores ─────────────────────────────────────────────
 zscore_cols = ["rating_mean", "soundness_mean", "contribution_mean"]
 for col in zscore_cols:
     features = features.with_columns(
-        ((pl.col(col) - pl.col(col).mean().over("primary_area"))
-         / pl.col(col).std().over("primary_area"))
-        .alias(f"{col}_area_z")
+        (
+            (pl.col(col) - pl.col(col).mean().over("primary_area"))
+            / pl.col(col).std().over("primary_area")
+        ).alias(f"{col}_area_z")
     )
 
 # ── Summary ──────────────────────────────────────────────────────────────
@@ -221,12 +250,10 @@ for c in sorted(new_cols):
     print(f"  {c}: {features[c].dtype}")
 
 print(f"\nFinal shape: {features.shape}")
-print(f"Null counts in new columns:")
+print("Null counts in new columns:")
 null_counts = features.select(new_cols).null_count()
 non_zero_nulls = {
-    c: null_counts[c].item()
-    for c in new_cols
-    if null_counts[c].item() > 0
+    c: null_counts[c].item() for c in new_cols if null_counts[c].item() > 0
 }
 if non_zero_nulls:
     for c, n in non_zero_nulls.items():
@@ -236,7 +263,7 @@ else:
 
 # ── Save ─────────────────────────────────────────────────────────────────
 features.write_parquet("iclr_2026_features.parquet")
-print(f"\nSaved to iclr_2026_features.parquet")
+print("\nSaved to iclr_2026_features.parquet")
 
 # ── Sanity check: trustworthiness summary ────────────────────────────────
 print("\n" + "=" * 60)

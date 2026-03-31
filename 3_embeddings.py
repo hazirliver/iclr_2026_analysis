@@ -8,6 +8,9 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+import umap
 
 EMBEDDINGS_FILE = Path("embeddings.npy")
 OUTPUT_FILE = "iclr_2026_embeddings.parquet"
@@ -22,9 +25,9 @@ print(f"Saved {texts_df.shape[0]} texts to texts_for_embedding.parquet")
 print("  Columns: openreview_id, text_for_embedding")
 
 if not EMBEDDINGS_FILE.exists():
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("EMBEDDINGS NOT FOUND")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"""
 To compute embeddings:
   1. Copy texts_for_embedding.parquet to your GPU VM
@@ -46,10 +49,6 @@ Skipping semantic analysis for now.
 # POST-EMBEDDING PROCESSING (runs only when embeddings.npy exists)
 # ══════════════════════════════════════════════════════════════════════════
 
-from sklearn.decomposition import PCA
-from sklearn.neighbors import NearestNeighbors
-import umap
-
 SEED = 42
 np.random.seed(SEED)
 
@@ -62,8 +61,10 @@ print(f"\nLoaded embeddings: shape={embeddings.shape}")
 
 # Check normalization
 norms = np.linalg.norm(embeddings, axis=1)
-print(f"Embedding norms: mean={norms.mean():.4f}, std={norms.std():.4f}, "
-      f"min={norms.min():.4f}, max={norms.max():.4f}")
+print(
+    f"Embedding norms: mean={norms.mean():.4f}, std={norms.std():.4f}, "
+    f"min={norms.min():.4f}, max={norms.max():.4f}"
+)
 
 if norms.std() > 0.01:
     print("Normalizing embeddings to unit length")
@@ -72,8 +73,10 @@ if norms.std() > 0.01:
 # ── PCA for denoising ───────────────────────────────────────────────────
 pca = PCA(n_components=0.9, random_state=SEED)
 embeddings_pca = pca.fit_transform(embeddings)
-print(f"\nPCA: {embeddings.shape[1]} → {embeddings_pca.shape[1]} components "
-      f"(90% variance, explained={pca.explained_variance_ratio_.sum():.4f})")
+print(
+    f"\nPCA: {embeddings.shape[1]} → {embeddings_pca.shape[1]} components "
+    f"(90% variance, explained={pca.explained_variance_ratio_.sum():.4f})"
+)
 
 # ── UMAP for visualization ──────────────────────────────────────────────
 reducer = umap.UMAP(n_components=2, random_state=SEED, n_neighbors=30, min_dist=0.1)
@@ -90,7 +93,9 @@ distances, indices = nn.kneighbors(embeddings)
 mean_knn_dist = distances[:, 1:].mean(axis=1)
 print(f"\nLocal density (mean {K}-NN cosine distance):")
 print(f"  mean={mean_knn_dist.mean():.4f}, std={mean_knn_dist.std():.4f}")
-print(f"  min={mean_knn_dist.min():.4f} (densest), max={mean_knn_dist.max():.4f} (most isolated)")
+print(
+    f"  min={mean_knn_dist.min():.4f} (densest), max={mean_knn_dist.max():.4f} (most isolated)"
+)
 
 # ── Near-duplicate detection ─────────────────────────────────────────────
 # Pairs with cosine similarity > 0.95 (distance < 0.05)
