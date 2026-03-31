@@ -25,8 +25,13 @@ pdf = df.to_pandas()
 # 1. Score distributions: violin/ridge by status
 # ══════════════════════════════════════════════════════════════════════════
 
-score_cols = ["rating_mean", "soundness_mean", "presentation_mean",
-              "contribution_mean", "confidence_mean"]
+score_cols = [
+    "rating_mean",
+    "soundness_mean",
+    "presentation_mean",
+    "contribution_mean",
+    "confidence_mean",
+]
 
 fig = make_subplots(rows=1, cols=5, subplot_titles=score_cols)
 for i, col in enumerate(score_cols, 1):
@@ -34,14 +39,20 @@ for i, col in enumerate(score_cols, 1):
         subset = pdf[pdf["status"] == status]
         fig.add_trace(
             go.Violin(
-                y=subset[col], name=status, legendgroup=status,
-                showlegend=(i == 1), box_visible=True, meanline_visible=True,
+                y=subset[col],
+                name=status,
+                legendgroup=status,
+                showlegend=(i == 1),
+                box_visible=True,
+                meanline_visible=True,
             ),
-            row=1, col=i,
+            row=1,
+            col=i,
         )
 fig.update_layout(
     title="Score Distributions by Status",
-    height=500, width=1600,
+    height=500,
+    width=1600,
     violinmode="overlay",
 )
 fig.write_html(FIGURES / "scores_by_status_violin.html")
@@ -53,8 +64,11 @@ area_pdf = pdf[pdf["primary_area"].isin(top_areas)]
 
 for col in ["rating_mean", "soundness_mean", "contribution_mean"]:
     fig = px.violin(
-        area_pdf, x="primary_area", y=col,
-        box=True, color="primary_area",
+        area_pdf,
+        x="primary_area",
+        y=col,
+        box=True,
+        color="primary_area",
         title=f"{col} by Area (Top 10)",
     )
     fig.update_layout(xaxis_tickangle=-45, height=500)
@@ -66,17 +80,32 @@ print("✓ Score violin plots by area")
 # ══════════════════════════════════════════════════════════════════════════
 
 numeric_cols = [
-    "rating_mean", "rating_std", "soundness_mean", "presentation_mean",
-    "contribution_mean", "confidence_mean", "n_reviewers", "n_replies",
-    "n_authors", "total_review_wc", "wc_review_mean", "wc_strengths_mean",
-    "wc_weaknesses_mean", "wc_questions_mean", "strengths_weaknesses_ratio",
-    "questions_review_ratio", "corr_rating_confidence",
+    "rating_mean",
+    "rating_std",
+    "soundness_mean",
+    "presentation_mean",
+    "contribution_mean",
+    "confidence_mean",
+    "n_reviewers",
+    "n_replies",
+    "n_authors",
+    "total_review_wc",
+    "wc_review_mean",
+    "wc_strengths_mean",
+    "wc_weaknesses_mean",
+    "wc_questions_mean",
+    "strengths_weaknesses_ratio",
+    "questions_review_ratio",
+    "corr_rating_confidence",
 ]
 corr = pdf[numeric_cols].corr(method="spearman")
 
 fig = px.imshow(
-    corr, text_auto=".2f",
-    color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
+    corr,
+    text_auto=".2f",
+    color_continuous_scale="RdBu_r",
+    zmin=-1,
+    zmax=1,
     title="Spearman Correlation: All Scalar Review Features",
 )
 fig.update_layout(height=700, width=800)
@@ -94,8 +123,11 @@ if has_umap:
             lambda x: "Noise" if x == -1 else f"C{x}"
         )
         fig = px.scatter(
-            pdf, x="umap_x", y="umap_y",
-            color="cluster_label", hover_name="title",
+            pdf,
+            x="umap_x",
+            y="umap_y",
+            color="cluster_label",
+            hover_name="title",
             hover_data=["rating_mean", "primary_area", "status"],
             title="UMAP: Colored by HDBSCAN Cluster",
             opacity=0.6,
@@ -105,8 +137,11 @@ if has_umap:
 
     # By primary area
     fig = px.scatter(
-        pdf, x="umap_x", y="umap_y",
-        color="primary_area", hover_name="title",
+        pdf,
+        x="umap_x",
+        y="umap_y",
+        color="primary_area",
+        hover_name="title",
         hover_data=["rating_mean", "status"],
         title="UMAP: Colored by Primary Area",
         opacity=0.5,
@@ -116,8 +151,11 @@ if has_umap:
 
     # By rating mean
     fig = px.scatter(
-        pdf, x="umap_x", y="umap_y",
-        color="rating_mean", hover_name="title",
+        pdf,
+        x="umap_x",
+        y="umap_y",
+        color="rating_mean",
+        hover_name="title",
         hover_data=["primary_area", "status"],
         color_continuous_scale="RdYlGn",
         title="UMAP: Colored by Rating Mean",
@@ -128,8 +166,11 @@ if has_umap:
 
     # By interestingness archetype (top overall score)
     fig = px.scatter(
-        pdf, x="umap_x", y="umap_y",
-        color="score_top_overall", hover_name="title",
+        pdf,
+        x="umap_x",
+        y="umap_y",
+        color="score_top_overall",
+        hover_name="title",
         hover_data=["rating_mean", "primary_area", "status"],
         color_continuous_scale="Plasma",
         title="UMAP: Colored by Top Overall Score",
@@ -162,8 +203,11 @@ if has_clusters:
 
     cluster_pdf = cluster_summary.to_pandas()
     fig = px.scatter(
-        cluster_pdf, x="size", y="mean_rating",
-        size="size", color="mean_contribution",
+        cluster_pdf,
+        x="size",
+        y="mean_rating",
+        size="size",
+        color="mean_contribution",
         hover_data=["cluster_hdbscan", "mean_soundness", "mean_disagreement"],
         color_continuous_scale="Viridis",
         title="Cluster Size vs Mean Rating (color=contribution)",
@@ -208,7 +252,18 @@ fig = go.Figure(
                 values=[area_summary[c].to_list() for c in area_summary.columns],
                 fill_color="lavender",
                 align="left",
-                format=[None, None, ".2f", ".2f", ".2f", ".2f", ".2f", ".1f", None, ".1f"],
+                format=[
+                    None,
+                    None,
+                    ".2f",
+                    ".2f",
+                    ".2f",
+                    ".2f",
+                    ".2f",
+                    ".1f",
+                    None,
+                    ".1f",
+                ],
             ),
         )
     ]
@@ -224,17 +279,20 @@ print("✓ Area summary table")
 archetype_cols = [c for c in df.columns if c.startswith("score_")]
 if archetype_cols:
     fig = make_subplots(
-        rows=1, cols=len(archetype_cols),
+        rows=1,
+        cols=len(archetype_cols),
         subplot_titles=[c.replace("score_", "") for c in archetype_cols],
     )
     for i, col in enumerate(archetype_cols, 1):
         fig.add_trace(
             go.Histogram(x=df[col].to_list(), nbinsx=40, name=col),
-            row=1, col=i,
+            row=1,
+            col=i,
         )
     fig.update_layout(
         title="Archetype Score Distributions",
-        height=350, width=300 * len(archetype_cols),
+        height=350,
+        width=300 * len(archetype_cols),
         showlegend=False,
     )
     fig.write_html(FIGURES / "archetype_distributions.html")

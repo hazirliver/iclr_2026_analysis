@@ -4,8 +4,6 @@ Defines 9 archetypes with explicit, transparent scoring rules.
 Embedding-dependent archetypes gracefully degrade when unavailable.
 """
 
-from pathlib import Path
-
 import numpy as np
 import polars as pl
 
@@ -18,7 +16,9 @@ print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 has_embeddings = "mean_knn_distance" in df.columns
 has_bridge = "bridge_ratio" in df.columns
 has_clusters = "cluster_hdbscan" in df.columns
-print(f"Embeddings: {has_embeddings}, Bridge scores: {has_bridge}, Clusters: {has_clusters}")
+print(
+    f"Embeddings: {has_embeddings}, Bridge scores: {has_bridge}, Clusters: {has_clusters}"
+)
 
 
 def z_score(col: pl.Expr) -> pl.Expr:
@@ -37,9 +37,9 @@ def area_z(col_name: str) -> pl.Expr:
 def print_top_papers(scored_df: pl.DataFrame, score_col: str, label: str, n: int = 20):
     """Print top-N papers for an archetype."""
     top = scored_df.sort(score_col, descending=True).head(n)
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"TOP {n} — {label}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for i, row in enumerate(top.iter_rows(named=True), 1):
         print(
             f"  {i:2d}. [{row['status']:8s}] rating={row['rating_mean']:.1f} "
@@ -136,9 +136,7 @@ else:
 
 if has_bridge:
     # Lower bridge_ratio = more bridge-like (close to 2+ centroids)
-    df = df.with_columns(
-        score_bridge=(-z_score(pl.col("bridge_ratio")))
-    )
+    df = df.with_columns(score_bridge=(-z_score(pl.col("bridge_ratio"))))
     print_top_papers(df, "score_bridge", "BRIDGE PAPERS", 15)
 else:
     print("\n⚠ Skipping BRIDGE PAPERS (no embeddings/clusters)")
@@ -150,7 +148,9 @@ else:
 
 if has_clusters:
     cluster_col = "cluster_hdbscan"
-    clusters = df.filter(pl.col(cluster_col) != -1)[cluster_col].unique().sort().to_list()
+    clusters = (
+        df.filter(pl.col(cluster_col) != -1)[cluster_col].unique().sort().to_list()
+    )
 
     exemplars = []
     for cid in clusters:
@@ -169,9 +169,9 @@ if has_clusters:
 
     if exemplars:
         exemplar_df = pl.concat(exemplars)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"CLUSTER EXEMPLARS ({len(clusters)} clusters, up to 3 per cluster)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         for row in exemplar_df.iter_rows(named=True):
             print(
                 f"  Cluster {row['exemplar_cluster']:3d}: "
@@ -194,9 +194,9 @@ df = df.with_columns(
 )
 
 areas = df["primary_area"].unique().sort().to_list()
-print(f"\n{'='*60}")
+print(f"\n{'=' * 60}")
 print(f"AREA LEADERS (top 3 per area, {len(areas)} areas)")
-print(f"{'='*60}")
+print(f"{'=' * 60}")
 for area in areas:
     area_df = df.filter(pl.col("primary_area") == area)
     top = area_df.sort("score_area_leader", descending=True).head(3)
