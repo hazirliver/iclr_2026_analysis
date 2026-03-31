@@ -98,12 +98,7 @@ iclr_2026_accepted_3 = iclr_2026_accepted_2.with_columns(
 
 
 # Columns + Types
-pprint(list(
-    zip(
-        iclr_2026_accepted_3.columns,
-        iclr_2026_accepted_3.dtypes
-    )
-))
+pprint(list(zip(iclr_2026_accepted_3.columns, iclr_2026_accepted_3.dtypes)))
 
 # First 2 rows
 iclr_2026_accepted_3.glimpse(max_items_per_column=2)
@@ -111,5 +106,8 @@ iclr_2026_accepted_3.glimpse(max_items_per_column=2)
 # Some basic statistics
 iclr_2026_accepted_3.describe()
 
-
-
+# Save cleaned accepted papers for downstream scripts
+iclr_2026_accepted_3.write_parquet("iclr_2026_accepted.parquet")
+print(
+    f"\nSaved {len(iclr_2026_accepted_3)} accepted papers to iclr_2026_accepted.parquet"
+)
