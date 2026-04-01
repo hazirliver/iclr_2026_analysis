@@ -34,10 +34,14 @@ async def embed_batch(texts: list[str]) -> list[list[float]]:
 
 
 async def embed_all(keywords: list[str]) -> pl.DataFrame:
-    batches = [keywords[i : i + BATCH_SIZE] for i in range(0, len(keywords), BATCH_SIZE)]
+    batches = [
+        keywords[i : i + BATCH_SIZE] for i in range(0, len(keywords), BATCH_SIZE)
+    ]
 
     tasks = [embed_batch(b) for b in batches]
-    results = await tqdm.gather(*tasks, desc="Embedding keyword batches", total=len(batches))
+    results = await tqdm.gather(
+        *tasks, desc="Embedding keyword batches", total=len(batches)
+    )
 
     embeddings = [emb for batch_embs in results for emb in batch_embs]
     print(f"Done: {len(embeddings)} embeddings, dim={len(embeddings[0])}")

@@ -4,11 +4,8 @@ __generated_with = "0.22.0"
 app = marimo.App(width="medium")
 
 with app.setup:
-    from collections import Counter
-
     import numpy as np
     import plotly.express as px
-    import plotly.graph_objects as go
     import polars as pl
     from sklearn.cluster import AgglomerativeClustering
     import marimo as mo
@@ -25,8 +22,9 @@ def _():
     Author-provided keywords have ~9K unique values with heavy fragmentation
     (e.g. `llm` / `llms` / `large language model` / `large language models`).
 
-    Approach: embed keywords with Qwen3-Embedding-8B → agglomerative clustering
-    on cosine distance → pick most frequent member as canonical label.
+    Approach: manual pre-merge for known abbreviations → embed keywords with
+    Qwen3-Embedding-8B → agglomerative clustering on cosine distance → pick
+    most frequent member as canonical label.
     """)
     return
 
@@ -34,7 +32,7 @@ def _():
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    ## Load keyword embeddings
+    ## Load keyword embeddings and paper frequencies
     """)
     return
 
@@ -48,24 +46,16 @@ def _():
 
 @app.cell
 def _(kw_emb):
-    embeddings = np.array(kw_emb["embedding"].to_list(), dtype=np.float32)
-    keywords = kw_emb["keyword"].to_list()
-    print(f"Embedding matrix: {embeddings.shape}")
+    kw_embeddings = np.array(kw_emb["embedding"].to_list(), dtype=np.float32)
+    kw_list = kw_emb["keyword"].to_list()
+    print(f"Embedding matrix: {kw_embeddings.shape}")
 
-    norms = np.linalg.norm(embeddings, axis=1)
-    print(f"Norms: mean={norms.mean():.4f}, std={norms.std():.6f}")
-    if norms.std() > 0.01:
-        embeddings = embeddings / norms[:, np.newaxis]
+    kw_norms = np.linalg.norm(kw_embeddings, axis=1)
+    print(f"Norms: mean={kw_norms.mean():.4f}, std={kw_norms.std():.6f}")
+    if kw_norms.std() > 0.01:
+        kw_embeddings = kw_embeddings / kw_norms[:, np.newaxis]
         print("Normalized to unit length")
-    return embeddings, keywords
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## Build keyword frequency from papers
-    """)
-    return
+    return kw_embeddings, kw_list
 
 
 @app.cell
@@ -81,7 +71,9 @@ def _():
         .sort("len", descending=True)
     )
     freq_map = dict(zip(kw_freq["keywords"].to_list(), kw_freq["len"].to_list()))
-    print(f"Keyword frequencies: {len(freq_map)} unique, total occurrences={sum(freq_map.values())}")
+    print(
+        f"Keyword frequencies: {len(freq_map)} unique, total occurrences={sum(freq_map.values())}"
+    )
     print(f"Appearing once: {sum(1 for v in freq_map.values() if v == 1)}")
     return features, freq_map
 
@@ -89,29 +81,126 @@ def _():
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    ## Sweep distance threshold
+    ## Manual pre-merge: abbreviations → full forms
 
-    Agglomerative clustering with `metric=cosine`, `linkage=average`.
-    Lower threshold = more clusters (finer), higher = fewer (coarser merging).
+    Short abbreviations (2-4 chars) embed far from their full forms because
+    the embedding model treats them as generic tokens. These must be mapped
+    explicitly before clustering.
     """)
     return
 
 
 @app.cell
-def _(embeddings):
+def _():
+    MANUAL_MERGES: dict[str, str] = {
+        # Common ML abbreviations
+        "rl": "reinforcement learning",
+        "llm": "large language model",
+        "llms": "large language models",
+        "lmm": "large multimodal model",
+        "lmms": "large multimodal models",
+        "mllm": "multimodal large language model",
+        "mllms": "multimodal large language models",
+        "vlm": "vision-language model",
+        "vlms": "vision-language models",
+        "vllm": "vision-language model",
+        "gnn": "graph neural network",
+        "gnns": "graph neural networks",
+        "cnn": "convolutional neural network",
+        "cnns": "convolutional neural networks",
+        "vae": "variational autoencoder",
+        "vaes": "variational autoencoders",
+        "gan": "generative adversarial network",
+        "gans": "generative adversarial networks",
+        "dpo": "direct preference optimization",
+        "rlhf": "reinforcement learning from human feedback",
+        "ppo": "proximal policy optimization",
+        "sft": "supervised fine-tuning",
+        "rag": "retrieval-augmented generation",
+        "icl": "in-context learning",
+        "cot": "chain-of-thought",
+        "chain of thought": "chain-of-thought",
+        "moe": "mixture of experts",
+        "nerf": "neural radiance fields",
+        "nerfs": "neural radiance fields",
+        "snn": "spiking neural network",
+        "snns": "spiking neural networks",
+        "ssl": "self-supervised learning",
+        "cl": "continual learning",
+        "tts": "text-to-speech",
+        "asr": "automatic speech recognition",
+        "nlp": "natural language processing",
+        "cv": "computer vision",
+        "od": "object detection",
+        "nas": "neural architecture search",
+        "gflownet": "gflownets",
+        "pde": "partial differential equations",
+        "pdes": "partial differential equations",
+        "ode": "ordinary differential equations",
+        "odes": "ordinary differential equations",
+        "dp": "differential privacy",
+        "fl": "federated learning",
+        "marl": "multi-agent reinforcement learning",
+        "lora": "low-rank adaptation",
+        "peft": "parameter-efficient fine-tuning",
+        "3dgs": "3d gaussian splatting",
+        "kd": "knowledge distillation",
+    }
+    print(f"Manual merges defined: {len(MANUAL_MERGES)} abbreviation → full form")
+    return (MANUAL_MERGES,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Apply manual merges to embedding index
+
+    Replace each abbreviation's embedding with its full form's embedding,
+    so clustering groups them together.
+    """)
+    return
+
+
+@app.cell
+def _(MANUAL_MERGES, kw_embeddings, kw_list):
+    kw_to_idx = {kw: i for i, kw in enumerate(kw_list)}
+
+    merged_embeddings = kw_embeddings.copy()
+    merges_applied = 0
+    for abbrev, full_form in MANUAL_MERGES.items():
+        if abbrev in kw_to_idx and full_form in kw_to_idx:
+            merged_embeddings[kw_to_idx[abbrev]] = kw_embeddings[kw_to_idx[full_form]]
+            merges_applied += 1
+
+    print(
+        f"Applied {merges_applied} embedding replacements (abbrev → full form vector)"
+    )
+    return (merged_embeddings,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Sweep distance threshold
+    """)
+    return
+
+
+@app.cell
+def _(merged_embeddings):
     thresholds = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
     sweep_results = []
     for t in thresholds:
-        clust = AgglomerativeClustering(
+        sweep_clust = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=t,
             metric="cosine",
             linkage="average",
         )
-        labels = clust.fit_predict(embeddings)
-        n_clusters = len(set(labels))
-        sweep_results.append({"threshold": t, "n_clusters": n_clusters})
-        print(f"  threshold={t:.2f}: {n_clusters} clusters")
+        sweep_labels = sweep_clust.fit_predict(merged_embeddings)
+        n = len(set(sweep_labels))
+        sweep_results.append({"threshold": t, "n_clusters": n})
+        print(f"  threshold={t:.2f}: {n} clusters")
     return (sweep_results,)
 
 
@@ -139,45 +228,57 @@ def _():
 
 
 @app.cell
-def _(embeddings, freq_map, keywords):
+def _(MANUAL_MERGES, freq_map, kw_list, merged_embeddings):
     THRESHOLD = 0.20
 
-    clust = AgglomerativeClustering(
+    final_clust = AgglomerativeClustering(
         n_clusters=None,
         distance_threshold=THRESHOLD,
         metric="cosine",
         linkage="average",
     )
-    labels = clust.fit_predict(embeddings)
-    n_clusters = len(set(labels))
-    print(f"Threshold={THRESHOLD}: {n_clusters} clusters from {len(keywords)} keywords")
+    final_labels = final_clust.fit_predict(merged_embeddings)
+    print(
+        f"Threshold={THRESHOLD}: {len(set(final_labels))} clusters from {len(kw_list)} keywords"
+    )
 
-    # For each cluster, pick the most frequent keyword as canonical label
+    # Build cluster members
     cluster_members: dict[int, list[str]] = {}
-    for kw, label in zip(keywords, labels):
-        cluster_members.setdefault(int(label), []).append(kw)
+    for kw, lbl in zip(kw_list, final_labels):
+        cluster_members.setdefault(int(lbl), []).append(kw)
 
+    # Build canonical map: most frequent keyword per cluster as canonical,
+    # with manual merge targets taking priority
+    manual_targets = set(MANUAL_MERGES.values())
     canonical_map: dict[str, str] = {}
     cluster_info = []
     for cid, members in cluster_members.items():
-        # Sort by frequency (descending), then alphabetically for ties
         members_sorted = sorted(members, key=lambda k: (-freq_map.get(k, 0), k))
-        canonical = members_sorted[0]
+        # Prefer manual merge targets as canonical if present in the cluster
+        canonical = next(
+            (m for m in members_sorted if m in manual_targets), members_sorted[0]
+        )
         total_freq = sum(freq_map.get(m, 0) for m in members)
         for m in members:
             canonical_map[m] = canonical
-        cluster_info.append({
-            "cluster_id": cid,
-            "canonical": canonical,
-            "size": len(members),
-            "total_freq": total_freq,
-            "members": ", ".join(members_sorted[:10]),
-        })
+        # Also map manual abbreviations that may not be in this cluster
+        for abbrev, target in MANUAL_MERGES.items():
+            if target == canonical and abbrev in canonical_map:
+                canonical_map[abbrev] = canonical
+        cluster_info.append(
+            {
+                "cluster_id": cid,
+                "canonical": canonical,
+                "size": len(members),
+                "total_freq": total_freq,
+                "members": ", ".join(members_sorted[:10]),
+            }
+        )
 
     cluster_df = pl.DataFrame(cluster_info).sort("total_freq", descending=True)
     print(f"Singletons: {cluster_df.filter(pl.col('size') == 1).shape[0]}")
     print(f"Clusters with 2+ members: {cluster_df.filter(pl.col('size') > 1).shape[0]}")
-    return canonical_map, cluster_df, labels
+    return canonical_map, cluster_df, final_labels
 
 
 @app.cell(hide_code=True)
@@ -236,9 +337,11 @@ def _():
 
 @app.cell
 def _(cluster_df):
-    largest = cluster_df.filter(pl.col("size") > 1).head(20)
-    for row in largest.iter_rows(named=True):
-        print(f"\n[{row['canonical']}] ({row['size']} members, freq={row['total_freq']})")
+    largest_clusters = cluster_df.filter(pl.col("size") > 1).head(20)
+    for row in largest_clusters.iter_rows(named=True):
+        print(
+            f"\n[{row['canonical']}] ({row['size']} members, freq={row['total_freq']})"
+        )
         print(f"  {row['members']}")
     return
 
@@ -252,35 +355,36 @@ def _():
 
 
 @app.cell
-def _(canonical_map, features, labels, keywords):
-    # Save keyword → canonical mapping
-    mapping_df = pl.DataFrame({
-        "keyword": list(canonical_map.keys()),
-        "canonical_keyword": list(canonical_map.values()),
-        "cluster_id": [int(labels[keywords.index(k)]) for k in canonical_map],
-    })
+def _(canonical_map, features, final_labels, kw_list):
+    kw_to_label = {kw: int(lbl) for kw, lbl in zip(kw_list, final_labels)}
+    mapping_df = pl.DataFrame(
+        {
+            "keyword": list(canonical_map.keys()),
+            "canonical_keyword": list(canonical_map.values()),
+            "cluster_id": [kw_to_label.get(k, -1) for k in canonical_map],
+        }
+    )
     mapping_df.write_parquet("keyword_mapping.parquet")
     print(f"Saved keyword_mapping.parquet: {mapping_df.shape[0]} rows")
 
-    # Add canonical_keywords column to features
-    def map_keywords(kw_list: list[str]) -> list[str]:
-        seen = set()
-        result = []
-        for k in kw_list:
+    def map_keywords(kw_row: list[str]) -> list[str]:
+        seen: set[str] = set()
+        result: list[str] = []
+        for k in kw_row:
             canon = canonical_map.get(k.lower().strip(), k.lower().strip())
             if canon not in seen:
                 seen.add(canon)
                 result.append(canon)
         return result
 
-    canonical_lists = [
-        map_keywords(row) for row in features["keywords"].to_list()
-    ]
-    updated = features.with_columns(
+    canonical_lists = [map_keywords(row) for row in features["keywords"].to_list()]
+    updated_features = features.with_columns(
         pl.Series("canonical_keywords", canonical_lists)
     )
-    updated.write_parquet("iclr_2026_features.parquet")
-    print(f"Updated iclr_2026_features.parquet with canonical_keywords column ({updated.shape[1]} cols)")
+    updated_features.write_parquet("iclr_2026_features.parquet")
+    print(
+        f"Updated iclr_2026_features.parquet with canonical_keywords column ({updated_features.shape[1]} cols)"
+    )
     return
 
 
