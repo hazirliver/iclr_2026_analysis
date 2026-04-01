@@ -4,8 +4,6 @@ __generated_with = "0.21.1"
 app = marimo.App(width="medium")
 
 with app.setup:
-    from io import StringIO
-    import requests
     import time
     import random
     import json
@@ -94,7 +92,9 @@ def download_pdfs(
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
                 }
-                with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers) as client:
+                with httpx.Client(
+                    timeout=timeout, follow_redirects=True, headers=headers
+                ) as client:
                     resp = client.get(url)
                     resp.raise_for_status()
                     out_path.write_bytes(resp.content)
@@ -159,7 +159,12 @@ def _(iclr_2026_raw):
 
 @app.cell
 def _():
-    accepted_statuses = ["Oral", "ICLR 2026 ConditionalOral", "Poster", "ICLR 2026 ConditionalPoster"]
+    accepted_statuses = [
+        "Oral",
+        "ICLR 2026 ConditionalOral",
+        "Poster",
+        "ICLR 2026 ConditionalPoster",
+    ]
     return (accepted_statuses,)
 
 
@@ -204,7 +209,9 @@ def _(iclr_2026_accepted_3):
 
 @app.cell
 def _(iclr_2026_accepted_2):
-    iclr_2026_accepted_2.filter((pl.col("reply_authors_avg").is_not_null()) & (pl.col("gs_version_total") != -1))
+    iclr_2026_accepted_2.filter(
+        (pl.col("reply_authors_avg").is_not_null()) & (pl.col("gs_version_total") != -1)
+    )
     return
 
 
@@ -217,49 +224,47 @@ def _(columns_to_drop):
 @app.cell
 def _(iclr_2026_accepted):
     columns_to_drop = [
-        'aff_unique_abbr',
-        'aff_unique_dep',
-        'github',
-        'aff_unique_norm',
-        'google_scholar',
-        'linkedin',
-        'authorids',
-        'aff_campus_unique_index',
-        'aff',
-        'aff_campus_unique',
-        'gs_cited_by_link',
-        'tldr',
-        'homepage',
-        'aff_unique_url',
-        'aff_country_unique_index',
-        'aff_domain',
-        'author',
-        'gender',
-        'project',
-        'position',
-        'or_profile',
-        'aff_unique_index',
-        'aff_country_unique',
-        'dblp',
-        'orcid',
-        'gs_version_total',
-        'gs_citation',
-        'reply_reviewers',
-        'wc_reply_reviewers',
-        'pdf_size',
-        'reply_authors_avg',
-        'reply_reviewers_avg',
-        'wc_reply_reviewers_avg',
-        'track',
-        'reviewers',
-        'reply_authors',
-        'wc_reply_authors',
-        'wc_reply_authors_avg',
-        'id',
-        'bibtex',
-
-        'supplementary_material'
-
+        "aff_unique_abbr",
+        "aff_unique_dep",
+        "github",
+        "aff_unique_norm",
+        "google_scholar",
+        "linkedin",
+        "authorids",
+        "aff_campus_unique_index",
+        "aff",
+        "aff_campus_unique",
+        "gs_cited_by_link",
+        "tldr",
+        "homepage",
+        "aff_unique_url",
+        "aff_country_unique_index",
+        "aff_domain",
+        "author",
+        "gender",
+        "project",
+        "position",
+        "or_profile",
+        "aff_unique_index",
+        "aff_country_unique",
+        "dblp",
+        "orcid",
+        "gs_version_total",
+        "gs_citation",
+        "reply_reviewers",
+        "wc_reply_reviewers",
+        "pdf_size",
+        "reply_authors_avg",
+        "reply_reviewers_avg",
+        "wc_reply_reviewers_avg",
+        "track",
+        "reviewers",
+        "reply_authors",
+        "wc_reply_authors",
+        "wc_reply_authors_avg",
+        "id",
+        "bibtex",
+        "supplementary_material",
     ]
 
     iclr_2026_accepted_2 = iclr_2026_accepted.drop(columns_to_drop)
@@ -275,14 +280,14 @@ def _(iclr_2026_accepted_2):
         pl.col("wc_review").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
         pl.col("contribution").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
         pl.col("rating").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
-        pl.col("wc_weaknesses").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
+        pl.col("wc_weaknesses")
+        .str.split(by=";")
+        .list.eval(pl.element().cast(pl.Int64)),
         pl.col("presentation").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
         pl.col("wc_questions").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
         pl.col("confidence").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
         pl.col("soundness").str.split(by=";").list.eval(pl.element().cast(pl.Int64)),
-
-        pl.col("keywords").str.split(by=";")
-
+        pl.col("keywords").str.split(by=";"),
     )
     iclr_2026_accepted_3
     return (iclr_2026_accepted_3,)
@@ -297,12 +302,7 @@ def _():
 
 @app.cell
 def _(iclr_2026_accepted_3, pprint):
-    pprint(list(
-        zip(
-            iclr_2026_accepted_3.columns,
-            iclr_2026_accepted_3.dtypes
-        )
-    ))
+    pprint(list(zip(iclr_2026_accepted_3.columns, iclr_2026_accepted_3.dtypes)))
     return
 
 

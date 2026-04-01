@@ -38,10 +38,12 @@ async def embed_all(df: pl.DataFrame) -> pl.DataFrame:
 
     # build result dataframe
     emb_array = np.array(embeddings, dtype=np.float32)
-    result = pl.DataFrame({
-        "openreview_id": ids,
-        "embedding": [row.tolist() for row in emb_array],
-    })
+    result = pl.DataFrame(
+        {
+            "openreview_id": ids,
+            "embedding": [row.tolist() for row in emb_array],
+        }
+    )
     return result
 
 

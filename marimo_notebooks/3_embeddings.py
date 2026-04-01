@@ -115,7 +115,9 @@ def _():
 def _():
     emb_df = pl.read_parquet(EMBEDDINGS_FILE)
     print(f"\nLoaded embeddings: {emb_df.shape[0]} rows, columns={emb_df.columns}")
-    assert "openreview_id" in emb_df.columns, "embeddings.parquet must have openreview_id"
+    assert "openreview_id" in emb_df.columns, (
+        "embeddings.parquet must have openreview_id"
+    )
     assert "embedding" in emb_df.columns, "embeddings.parquet must have embedding"
     return (emb_df,)
 
@@ -130,9 +132,13 @@ def _():
 
 @app.cell
 def _(emb_df, features):
-    missing = features.filter(~pl.col("openreview_id").is_in(emb_df["openreview_id"])).shape[0]
+    missing = features.filter(
+        ~pl.col("openreview_id").is_in(emb_df["openreview_id"])
+    ).shape[0]
     print(f"Papers without embedding: {missing}")
-    assert missing == 0, f"{missing} papers have no embedding — recheck inference output"
+    assert missing == 0, (
+        f"{missing} papers have no embedding — recheck inference output"
+    )
     return
 
 
@@ -149,7 +155,9 @@ def _():
 
 @app.cell
 def _(emb_df, features):
-    df = features.join(emb_df.select("openreview_id", "embedding"), on="openreview_id", how="left")
+    df = features.join(
+        emb_df.select("openreview_id", "embedding"), on="openreview_id", how="left"
+    )
     print(f"After join: {df.shape[0]} rows × {df.shape[1]} columns")
     return (df,)
 
@@ -183,7 +191,9 @@ def _():
 @app.cell
 def _(embeddings):
     norms = np.linalg.norm(embeddings, axis=1)
-    print(f"Embedding norms: mean={norms.mean():.4f}, std={norms.std():.4f}, min={norms.min():.4f}, max={norms.max():.4f}")
+    print(
+        f"Embedding norms: mean={norms.mean():.4f}, std={norms.std():.4f}, min={norms.min():.4f}, max={norms.max():.4f}"
+    )
     return
 
 
@@ -240,7 +250,9 @@ def _(cumvar):
         (0.95, "95%", "orange"),
         (0.99, "99%", "green"),
     ]:
-        fig1.add_hline(y=thresh, line_dash="dash", line_color=color, annotation_text=label)
+        fig1.add_hline(
+            y=thresh, line_dash="dash", line_color=color, annotation_text=label
+        )
     fig1.update_layout(
         title="PCA Cumulative Explained Variance (first 1000 components)",
         xaxis_title="n_components",
@@ -379,7 +391,9 @@ def _(K, distances):
     mean_knn_dist = distances[:, 1:].mean(axis=1)
     print(f"Local density (mean {K}-NN cosine dist):")
     print(f"  mean={mean_knn_dist.mean():.4f}, std={mean_knn_dist.std():.4f}")
-    print(f"  min={mean_knn_dist.min():.4f} (densest), max={mean_knn_dist.max():.4f} (most isolated)")
+    print(
+        f"  min={mean_knn_dist.min():.4f} (densest), max={mean_knn_dist.max():.4f} (most isolated)"
+    )
     return (mean_knn_dist,)
 
 
@@ -402,7 +416,9 @@ def _():
 @app.cell
 def _(K, mean_knn_dist):
     fig4 = go.Figure()
-    fig4.add_trace(go.Histogram(x=mean_knn_dist, nbinsx=80, name="mean kNN cosine dist"))
+    fig4.add_trace(
+        go.Histogram(x=mean_knn_dist, nbinsx=80, name="mean kNN cosine dist")
+    )
     fig4.update_layout(
         title=f"Local Density Distribution (mean {K}-NN cosine distance)",
         xaxis_title="mean kNN distance (higher = more isolated)",
@@ -452,7 +468,10 @@ def _(df, embeddings_pca, mean_knn_dist, umap_coords):
     # Store: UMAP coords, kNN density, all PCA components
     # Drop the raw `embedding` list column — it's large and downstream scripts
     # use PCA components for clustering
-    pca_series = [pl.Series(f"pca_{i}", embeddings_pca[:, i]) for i in range(embeddings_pca.shape[1])]
+    pca_series = [
+        pl.Series(f"pca_{i}", embeddings_pca[:, i])
+        for i in range(embeddings_pca.shape[1])
+    ]
     result = df.drop("embedding").with_columns(  # raw vectors not needed downstream
         pl.Series("umap_x", umap_coords[:, 0]),
         pl.Series("umap_y", umap_coords[:, 1]),
@@ -461,8 +480,12 @@ def _(df, embeddings_pca, mean_knn_dist, umap_coords):
     )
 
     result.write_parquet(OUTPUT_FILE)
-    print(f"\nSaved {result.shape[0]} rows × {result.shape[1]} columns to {OUTPUT_FILE}")
-    print(f"  New columns: umap_x, umap_y, mean_knn_distance, pca_0…pca_{embeddings_pca.shape[1] - 1}")
+    print(
+        f"\nSaved {result.shape[0]} rows × {result.shape[1]} columns to {OUTPUT_FILE}"
+    )
+    print(
+        f"  New columns: umap_x, umap_y, mean_knn_distance, pca_0…pca_{embeddings_pca.shape[1] - 1}"
+    )
     return
 
 

@@ -88,9 +88,7 @@ def normalize_submission(note: dict[str, Any]) -> dict[str, Any]:
     direct_replies = details.get("directReplies", []) or []
 
     reviews = [
-        normalize_review(reply)
-        for reply in direct_replies
-        if is_likely_review(reply)
+        normalize_review(reply) for reply in direct_replies if is_likely_review(reply)
     ]
 
     return {
@@ -179,11 +177,14 @@ def save_iclr_2026_submissions_with_reviews(
     total_reviews = 0
     total_submissions = 0
 
-    with open(output_path, "w", encoding="utf-8") as f, tqdm(
-        total=total,
-        desc="Fetching ICLR 2026 submissions",
-        unit="submission",
-    ) as pbar:
+    with (
+        open(output_path, "w", encoding="utf-8") as f,
+        tqdm(
+            total=total,
+            desc="Fetching ICLR 2026 submissions",
+            unit="submission",
+        ) as pbar,
+    ):
         for notes in fetch_submission_pages(session):
             for note in notes:
                 record = normalize_submission(note)

@@ -144,7 +144,10 @@ def _():
 def _(area_stats, df):
     top_areas = area_stats["primary_area"].head(15).to_list()
     area_status = (
-        df.filter(pl.col("primary_area").is_in(top_areas)).group_by("primary_area", "status").len().sort("primary_area")
+        df.filter(pl.col("primary_area").is_in(top_areas))
+        .group_by("primary_area", "status")
+        .len()
+        .sort("primary_area")
     )
     area_status
     return (area_status,)
@@ -238,7 +241,9 @@ def _(df, score_cols):
             row=1,
             col=i,
         )
-    fig6.update_layout(title="Score Distributions (paper-level means)", height=350, width=1400)
+    fig6.update_layout(
+        title="Score Distributions (paper-level means)", height=350, width=1400
+    )
     fig6
     return (fig6,)
 
