@@ -1,5 +1,6 @@
 pdfs/
 iclr-dataset/
+.claude
 
 # Python-generated files
 __pycache__/

@@ -21,7 +21,11 @@ dependencies = [
     "statsmodels>=0.14.6",
     "ty>=0.0.24",
     "umap-learn>=0.5.11",
-    "vllm>=0.16.0",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "vllm>=0.16.0"
 ]
 
 [project.scripts]
