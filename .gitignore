@@ -1,3 +1,6 @@
+pdfs/
+iclr-dataset/
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -321,3 +324,4 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
+
