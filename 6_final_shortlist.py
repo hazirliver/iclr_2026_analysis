@@ -9,7 +9,7 @@ import polars as pl
 df = pl.read_parquet("iclr_2026_scored.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
-has_clusters = "cluster_hdbscan" in df.columns
+has_clusters = "cluster_ward" in df.columns
 has_semantic = "score_semantic_novel" in df.columns
 has_bridge = "score_bridge" in df.columns
 
@@ -24,12 +24,12 @@ DISPLAY_COLS = [
     "site",
 ]
 if has_clusters:
-    DISPLAY_COLS.append("cluster_hdbscan")
+    DISPLAY_COLS.append("cluster_ward")
 
 
 def format_paper(row: dict, reason: str) -> str:
     """Format a paper for display."""
-    cluster = f" cluster={row.get('cluster_hdbscan', '?')}" if has_clusters else ""
+    cluster = f" cluster={row.get('cluster_ward', '?')}" if has_clusters else ""
     return (
         f"  [{row['status']:8s}] rating={row['rating_mean']:.1f} "
         f"sound={row['soundness_mean']:.1f} contrib={row['contribution_mean']:.1f}"
@@ -59,7 +59,7 @@ def diversified_top_n(
             break
 
         area = row["primary_area"]
-        cluster = row.get("cluster_hdbscan")
+        cluster = row.get("cluster_ward")
 
         if area_counts.get(area, 0) >= max_per_area:
             continue
@@ -111,13 +111,8 @@ if has_semantic:
 
 # 5. Top 3-5 per major cluster
 if has_clusters:
-    cluster_col = "cluster_hdbscan"
-    clusters = (
-        df.filter(pl.col(cluster_col) != -1)
-        .group_by(cluster_col)
-        .len()
-        .sort("len", descending=True)
-    )
+    cluster_col = "cluster_ward"
+    clusters = df.group_by(cluster_col).len().sort("len", descending=True)
     major_clusters = clusters.filter(pl.col("len") >= 50)[cluster_col].to_list()
 
     print(f"\n{'=' * 70}")
@@ -215,9 +210,7 @@ cluster_counts: dict[int, int] = {}
 status_counts: dict[str, int] = {}
 # Adapt cluster constraint to number of clusters available
 if has_clusters:
-    n_clusters = df.filter(pl.col("cluster_hdbscan") != -1)[
-        "cluster_hdbscan"
-    ].n_unique()
+    n_clusters = df["cluster_ward"].n_unique()
 else:
     n_clusters = 0
 
@@ -234,7 +227,7 @@ for oid, reason in unique_candidates:
     paper = df.filter(pl.col("openreview_id") == oid).row(0, named=True)
     area = paper["primary_area"]
     status = paper["status"]
-    cluster = paper.get("cluster_hdbscan")
+    cluster = paper.get("cluster_ward")
 
     if area_counts.get(area, 0) >= MAX_PER_AREA:
         continue
@@ -264,5 +257,5 @@ print("\nDiversity check:")
 print(f"  Unique areas: {len(set(final_areas))}")
 print(f"  Unique statuses: {len(set(final_statuses))}")
 if has_clusters:
-    final_clusters = [p.get("cluster_hdbscan") for p, _ in final_list]
+    final_clusters = [p.get("cluster_ward") for p, _ in final_list]
     print(f"  Unique clusters: {len(set(c for c in final_clusters if c is not None))}")

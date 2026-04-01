@@ -18,7 +18,7 @@ df = pl.read_parquet("iclr_2026_scored.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 has_umap = "umap_x" in df.columns
-has_clusters = "cluster_hdbscan" in df.columns
+has_clusters = "cluster_ward" in df.columns
 pdf = df.to_pandas()
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -119,9 +119,7 @@ print("✓ Full correlation heatmap")
 if has_umap:
     # By cluster
     if has_clusters:
-        pdf["cluster_label"] = pdf["cluster_hdbscan"].apply(
-            lambda x: "Noise" if x == -1 else f"C{x}"
-        )
+        pdf["cluster_label"] = pdf["cluster_ward"].apply(lambda x: f"C{x}")
         fig = px.scatter(
             pdf,
             x="umap_x",
@@ -189,8 +187,7 @@ else:
 
 if has_clusters:
     cluster_summary = (
-        df.filter(pl.col("cluster_hdbscan") != -1)
-        .group_by("cluster_hdbscan")
+        df.group_by("cluster_ward")
         .agg(
             pl.len().alias("size"),
             pl.col("rating_mean").mean().alias("mean_rating"),
@@ -208,10 +205,10 @@ if has_clusters:
         y="mean_rating",
         size="size",
         color="mean_contribution",
-        hover_data=["cluster_hdbscan", "mean_soundness", "mean_disagreement"],
+        hover_data=["cluster_ward", "mean_soundness", "mean_disagreement"],
         color_continuous_scale="Viridis",
         title="Cluster Size vs Mean Rating (color=contribution)",
-        text="cluster_hdbscan",
+        text="cluster_ward",
     )
     fig.update_traces(textposition="top center")
     fig.update_layout(height=500, width=700)

@@ -15,7 +15,7 @@ print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 has_embeddings = "mean_knn_distance" in df.columns
 has_bridge = "bridge_ratio" in df.columns
-has_clusters = "cluster_hdbscan" in df.columns
+has_clusters = "cluster_ward" in df.columns
 print(
     f"Embeddings: {has_embeddings}, Bridge scores: {has_bridge}, Clusters: {has_clusters}"
 )
@@ -147,7 +147,7 @@ else:
 # ══════════════════════════════════════════════════════════════════════════
 
 if has_clusters:
-    cluster_col = "cluster_hdbscan"
+    cluster_col = "cluster_ward"
     clusters = (
         df.filter(pl.col(cluster_col) != -1)[cluster_col].unique().sort().to_list()
     )
