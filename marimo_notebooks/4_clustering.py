@@ -14,8 +14,6 @@ with app.setup:
     from plotly.subplots import make_subplots
     from sklearn.cluster import KMeans, AgglomerativeClustering
     from sklearn.metrics import silhouette_score
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.feature_extraction.text import TfidfVectorizer
     from scipy.cluster.hierarchy import dendrogram
     from scipy.cluster.hierarchy import ward as ward_linkage
     from scipy.spatial.distance import cdist
@@ -51,8 +49,9 @@ def _():
 def _(df):
     pca_cols = [c for c in df.columns if c.startswith("pca_")]
     has_embeddings = len(pca_cols) > 0
-    has_umap = "umap_x" in df.columns
-    print(f"Embedding PCA columns found: {len(pca_cols)} → {'full mode' if has_embeddings else 'fallback mode'}")
+    print(
+        f"Embedding PCA columns found: {len(pca_cols)} → {'full mode' if has_embeddings else 'fallback mode'}"
+    )
 
     X = df.select(pca_cols).to_numpy()
     print(f"Clustering on PCA space: {X.shape}")
@@ -100,14 +99,18 @@ def _(X):
                 "silhouette": score if score > -1 else float("nan"),
             }
         )
-        print(f"  min_cluster_size={min_size:3d}: {n_clusters:3d} clusters, noise={noise_frac:.1%}, silhouette={score:.3f}")
+        print(
+            f"  min_cluster_size={min_size:3d}: {n_clusters:3d} clusters, noise={noise_frac:.1%}, silhouette={score:.3f}"
+        )
 
         if score > best_score:
             best_score = score
             best_min_size = min_size
             best_labels = labels
 
-    print(f"\nBest HDBSCAN: min_cluster_size={best_min_size}, silhouette={best_score:.3f}")
+    print(
+        f"\nBest HDBSCAN: min_cluster_size={best_min_size}, silhouette={best_score:.3f}"
+    )
     return best_labels, best_min_size, best_score, hdbscan_sweep, score
 
 
@@ -131,17 +134,29 @@ def _(best_min_size, hdbscan_sweep: list[dict]):
     )
     _x = _sweep["min_cluster_size"].to_list()
     fig1.add_trace(
-        go.Scatter(x=_x, y=_sweep["silhouette"].to_list(), mode="lines+markers", name="silhouette"),
+        go.Scatter(
+            x=_x,
+            y=_sweep["silhouette"].to_list(),
+            mode="lines+markers",
+            name="silhouette",
+        ),
         row=1,
         col=1,
     )
     fig1.add_trace(
-        go.Scatter(x=_x, y=_sweep["noise_pct"].to_list(), mode="lines+markers", name="noise %"),
+        go.Scatter(
+            x=_x, y=_sweep["noise_pct"].to_list(), mode="lines+markers", name="noise %"
+        ),
         row=1,
         col=2,
     )
     fig1.add_trace(
-        go.Scatter(x=_x, y=_sweep["n_clusters"].to_list(), mode="lines+markers", name="n_clusters"),
+        go.Scatter(
+            x=_x,
+            y=_sweep["n_clusters"].to_list(),
+            mode="lines+markers",
+            name="n_clusters",
+        ),
         row=1,
         col=3,
     )
@@ -164,8 +179,6 @@ def _(best_min_size, hdbscan_sweep: list[dict]):
 @app.cell
 def _(best_labels):
     assert best_labels is not None, "HDBSCAN produced no valid clustering"
-    hdbscan_labels = best_labels
-    n_hdbscan = len(set(hdbscan_labels)) - (1 if -1 in hdbscan_labels else 0)
     return
 
 
@@ -195,7 +208,6 @@ def _(X):
 
     km_final = KMeans(n_clusters=best_k, random_state=SEED, n_init=10)
     kmeans_labels = km_final.fit_predict(X)
-    kmeans_centroids = km_final.cluster_centers_
     print(f"\nBest KMeans: k={best_k}, silhouette={best_k_score:.3f}")
     return best_k, kmeans_labels, kmeans_sweep
 
@@ -230,7 +242,9 @@ def _(best_k, best_score, kmeans_sweep: list[dict]):
             annotation_text=f"HDBSCAN best ({best_score:.3f})",
         )
     if best_k is not None:
-        fig2.add_vline(x=best_k, line_dash="dash", line_color="royalblue", annotation_text="best k")
+        fig2.add_vline(
+            x=best_k, line_dash="dash", line_color="royalblue", annotation_text="best k"
+        )
     fig2.update_layout(
         title="KMeans Silhouette vs k (green = best HDBSCAN)",
         xaxis_title="k",
@@ -355,7 +369,13 @@ def _(X, best_ward_k, df, kmeans_labels, ward_labels):
         top_kw = [k for k, _ in kw_counts.most_common(5)]
 
         # Dominant areas
-        top_areas = cluster_df.group_by("primary_area").len().sort("len", descending=True)["primary_area"].head(3).to_list()
+        top_areas = (
+            cluster_df.group_by("primary_area")
+            .len()
+            .sort("len", descending=True)["primary_area"]
+            .head(3)
+            .to_list()
+        )
 
         # Representative papers (nearest to centroid in feature space)
         cluster_X = X[mask]
@@ -364,7 +384,9 @@ def _(X, best_ward_k, df, kmeans_labels, ward_labels):
         rep_papers = cluster_df[np.argsort(dists)[:5].tolist()]
 
         mean_rating_val = cluster_df["rating_mean"].mean()
-        mean_rating: float = mean_rating_val if isinstance(mean_rating_val, (int, float)) else 0.0  # type: ignore[assignment]
+        mean_rating: float = (
+            mean_rating_val if isinstance(mean_rating_val, (int, float)) else 0.0
+        )  # type: ignore[assignment]
 
         cluster_summaries.append(
             {
@@ -378,7 +400,10 @@ def _(X, best_ward_k, df, kmeans_labels, ward_labels):
         )
 
         # Print details for small clusters (outlier themes) and the largest ones
-        if n <= 30 or cid in sorted(cluster_ids, key=lambda c: (ward_labels == c).sum())[-5:]:
+        if (
+            n <= 30
+            or cid in sorted(cluster_ids, key=lambda c: (ward_labels == c).sum())[-5:]
+        ):
             print(f"\n--- Cluster {cid} (n={n}, mean_rating={mean_rating:.2f}) ---")
             print(f"  Keywords: {', '.join(top_kw)}")
             print(f"  Areas: {', '.join(top_areas)}")
@@ -469,7 +494,9 @@ def _(df_clustered):
         "rating_mean",
     ).to_pandas()
     _median_ser = _rating_df.groupby("cluster")["rating_mean"].median()
-    _order_by_median: list[str] = sorted(_median_ser.index.tolist(), key=lambda c: -float(_median_ser[c]))
+    _order_by_median: list[str] = sorted(
+        _median_ser.index.tolist(), key=lambda c: -float(_median_ser[c])
+    )
     fig6 = px.box(
         _rating_df,
         x="cluster",
@@ -514,7 +541,9 @@ def _(X, cluster_ids, df, df_clustered, ward_labels):
             cluster_ids[np.argsort(all_dists[idx])[0]],
             cluster_ids[np.argsort(all_dists[idx])[1]],
         )
-        print(f"  ratio={bridge_ratio[idx]:.3f}: clusters [{c1}, {c2}] '{df['title'][int(idx)][:70]}'")
+        print(
+            f"  ratio={bridge_ratio[idx]:.3f}: clusters [{c1}, {c2}] '{df['title'][int(idx)][:70]}'"
+        )
 
     df_clustered2 = df_clustered.with_columns(
         pl.Series("bridge_ratio", bridge_ratio),
@@ -546,7 +575,9 @@ def _(df_clustered2, n_ward):
         .len()
         .with_columns(
             pl.col("cluster_ward").cast(pl.String).alias("cluster"),
-            (pl.col("len") / pl.col("len").sum().over("cluster_ward")).alias("fraction"),
+            (pl.col("len") / pl.col("len").sum().over("cluster_ward")).alias(
+                "fraction"
+            ),
             pl.col("primary_area").str.slice(0, 35).alias("area_short"),
         )
     )
@@ -620,7 +651,9 @@ def _():
 def _(df_clustered2, n_ward, summary_df):
     df_clustered2.write_parquet("iclr_2026_clustered.parquet")
     summary_df.write_parquet("cluster_summary.parquet")
-    print(f"\nSaved {df_clustered2.shape[0]} rows × {df_clustered2.shape[1]} columns to iclr_2026_clustered.parquet")
+    print(
+        f"\nSaved {df_clustered2.shape[0]} rows × {df_clustered2.shape[1]} columns to iclr_2026_clustered.parquet"
+    )
     print(f"Saved cluster summary ({n_ward} clusters) to cluster_summary.parquet")
     return
 
