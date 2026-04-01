@@ -293,15 +293,10 @@ def _(fig7):
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    ## 1.6 Keyword frequency
-    """)
-    return
+    ## 1.6 Keyword frequency (canonical)
 
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    Explode keywords, normalize, count
+    Uses canonicalized keywords from notebook 1.5 (synonym clusters merged via
+    embedding-based agglomerative clustering).
     """)
     return
 
@@ -309,10 +304,10 @@ def _():
 @app.cell
 def _(df):
     kw_counts = (
-        df.select("keywords")
-        .explode("keywords")
-        .with_columns(pl.col("keywords").str.to_lowercase().str.strip_chars())
-        .group_by("keywords")
+        df.select("canonical_keywords")
+        .explode("canonical_keywords")
+        .filter(pl.col("canonical_keywords") != "")
+        .group_by("canonical_keywords")
         .len()
         .sort("len", descending=True)
     )
@@ -320,22 +315,14 @@ def _(df):
     return (kw_counts,)
 
 
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    # TODO: clusterize keywords using LLM
-    """)
-    return
-
-
 @app.cell
 def _(kw_counts):
     fig8 = px.bar(
         kw_counts.head(30).to_pandas(),
         x="len",
-        y="keywords",
+        y="canonical_keywords",
         orientation="h",
-        title="Top 30 Keywords",
+        title="Top 30 Canonical Keywords",
     )
     fig8.update_layout(height=600, yaxis={"categoryorder": "total ascending"})
     fig8
