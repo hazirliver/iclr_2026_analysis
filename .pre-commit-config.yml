@@ -8,11 +8,14 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: end-of-file-fixer
+        exclude: ^figures/
       - id: trailing-whitespace
+        exclude: ^figures/
       - id: check-merge-conflict
       - id: detect-private-key
       - id: fix-byte-order-marker
       - id: mixed-line-ending
+        exclude: ^figures/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.1
