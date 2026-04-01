@@ -8,7 +8,10 @@ from pathlib import Path
 from collections import Counter
 
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 import polars as pl
+from plotly.subplots import make_subplots
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
@@ -19,6 +22,7 @@ SEED = 42
 np.random.seed(SEED)
 FIGURES = Path("figures")
 FIGURES.mkdir(exist_ok=True)
+# Inline progress plots use .show() — not saved to figures/
 
 # ── Load data ────────────────────────────────────────────────────────────
 INPUT_FILE = "iclr_2026_embeddings.parquet"
@@ -31,6 +35,7 @@ print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns from {INPUT_FILE}")
 # ── Determine if we have embeddings ──────────────────────────────────────
 pca_cols = [c for c in df.columns if c.startswith("pca_")]
 has_embeddings = len(pca_cols) > 0
+has_umap = "umap_x" in df.columns
 print(
     f"Embedding PCA columns found: {len(pca_cols)} → {'full mode' if has_embeddings else 'fallback mode'}"
 )
@@ -79,6 +84,7 @@ print("\n=== HDBSCAN Sweep ===")
 best_score = -1
 best_min_size = None
 best_labels = None
+hdbscan_sweep: list[dict] = []
 
 for min_size in [15, 25, 50, 75]:
     clusterer = hdbscan.HDBSCAN(
@@ -98,6 +104,14 @@ for min_size in [15, 25, 50, 75]:
     else:
         score = -1
 
+    hdbscan_sweep.append(
+        {
+            "min_cluster_size": min_size,
+            "n_clusters": n_clusters,
+            "noise_pct": round(noise_frac * 100, 1),
+            "silhouette": score if score > -1 else float("nan"),
+        }
+    )
     print(
         f"  min_cluster_size={min_size:3d}: {n_clusters:3d} clusters, "
         f"noise={noise_frac:.1%}, silhouette={score:.3f}"
@@ -109,6 +123,51 @@ for min_size in [15, 25, 50, 75]:
         best_labels = labels
 
 print(f"\nBest HDBSCAN: min_cluster_size={best_min_size}, silhouette={best_score:.3f}")
+
+# ── PLOT 1: HDBSCAN sweep diagnostics ────────────────────────────────────
+# Three metrics in one view: silhouette (quality), noise % (coverage loss),
+# n_clusters (granularity). Helps pick min_cluster_size sensibly.
+_sweep = pl.DataFrame(hdbscan_sweep)
+fig = make_subplots(
+    rows=1,
+    cols=3,
+    subplot_titles=["Silhouette Score", "Noise %", "N Clusters"],
+)
+_x = _sweep["min_cluster_size"].to_list()
+fig.add_trace(
+    go.Scatter(
+        x=_x, y=_sweep["silhouette"].to_list(), mode="lines+markers", name="silhouette"
+    ),
+    row=1,
+    col=1,
+)
+fig.add_trace(
+    go.Scatter(
+        x=_x, y=_sweep["noise_pct"].to_list(), mode="lines+markers", name="noise %"
+    ),
+    row=1,
+    col=2,
+)
+fig.add_trace(
+    go.Scatter(
+        x=_x, y=_sweep["n_clusters"].to_list(), mode="lines+markers", name="n_clusters"
+    ),
+    row=1,
+    col=3,
+)
+if best_min_size is not None:
+    for col_i in [1, 2, 3]:
+        fig.add_vline(
+            x=best_min_size,
+            line_dash="dash",
+            line_color="green",
+            annotation_text="best",
+            row=1,
+            col=col_i,
+        )
+fig.update_xaxes(title_text="min_cluster_size")
+fig.update_layout(title="HDBSCAN Parameter Sweep", height=380, showlegend=False)
+fig.show()
 assert best_labels is not None, "HDBSCAN produced no valid clustering"
 hdbscan_labels = best_labels
 n_hdbscan = len(set(hdbscan_labels)) - (1 if -1 in hdbscan_labels else 0)
@@ -120,11 +179,13 @@ n_hdbscan = len(set(hdbscan_labels)) - (1 if -1 in hdbscan_labels else 0)
 print("\n=== KMeans Sweep ===")
 best_k_score = -1
 best_k = None
+kmeans_sweep: list[dict] = []
 
 for k in [10, 20, 30, 40, 50]:
     km = KMeans(n_clusters=k, random_state=SEED, n_init=10)
     km_labels = km.fit_predict(X)
     score = silhouette_score(X, km_labels)
+    kmeans_sweep.append({"k": k, "silhouette": score})
     print(f"  k={k:3d}: silhouette={score:.3f}")
     if score > best_k_score:
         best_k_score = score
@@ -134,6 +195,39 @@ km_final = KMeans(n_clusters=best_k, random_state=SEED, n_init=10)
 kmeans_labels = km_final.fit_predict(X)
 kmeans_centroids = km_final.cluster_centers_
 print(f"\nBest KMeans: k={best_k}, silhouette={best_k_score:.3f}")
+
+# ── PLOT 2: KMeans silhouette vs k ────────────────────────────────────────
+# HDBSCAN and KMeans silhouette on the same scale for direct comparison
+_km_sweep = pl.DataFrame(kmeans_sweep)
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=_km_sweep["k"].to_list(),
+        y=_km_sweep["silhouette"].to_list(),
+        mode="lines+markers",
+        name="KMeans silhouette",
+        line=dict(color="royalblue"),
+    )
+)
+if best_score > -1:
+    # Overlay best HDBSCAN silhouette as a horizontal reference
+    fig.add_hline(
+        y=best_score,
+        line_dash="dash",
+        line_color="green",
+        annotation_text=f"HDBSCAN best ({best_score:.3f})",
+    )
+if best_k is not None:
+    fig.add_vline(
+        x=best_k, line_dash="dash", line_color="royalblue", annotation_text="best k"
+    )
+fig.update_layout(
+    title="KMeans Silhouette vs k (green = best HDBSCAN)",
+    xaxis_title="k",
+    yaxis_title="silhouette score",
+    height=380,
+)
+fig.show()
 
 # Use HDBSCAN as primary assignment
 cluster_labels = hdbscan_labels
@@ -206,6 +300,76 @@ summary_df = pl.DataFrame(cluster_summaries)
 print("\n=== Cluster Size Distribution ===")
 print(summary_df.sort("size", descending=True))
 
+# ── PLOT 3: Cluster size bar chart ────────────────────────────────────────
+# Color-coded by mean rating — size alone doesn't indicate quality.
+# NOISE is shown separately so it doesn't visually dominate.
+_summary_sorted = summary_df.sort("size", descending=True).to_pandas()
+fig = px.bar(
+    _summary_sorted,
+    x="label",
+    y="size",
+    color="mean_rating",
+    color_continuous_scale="RdYlGn",
+    text="size",
+    title="Cluster Size (color = mean rating)",
+)
+fig.update_traces(textposition="outside")
+fig.update_layout(
+    xaxis_tickangle=-30, height=420, coloraxis_colorbar_title="mean rating"
+)
+fig.show()
+
+# ── PLOT 4: UMAP colored by HDBSCAN cluster ──────────────────────────────
+# Only meaningful when embeddings were computed; skip gracefully otherwise.
+if has_umap:
+    _umap_df = (
+        df_clustered.select(
+            "umap_x",
+            "umap_y",
+            "cluster_hdbscan",
+            "title",
+            "rating_mean",
+            "primary_area",
+        )
+        .with_columns(pl.col("cluster_hdbscan").cast(pl.String).alias("cluster_label"))
+        .to_pandas()
+    )
+    fig = px.scatter(
+        _umap_df,
+        x="umap_x",
+        y="umap_y",
+        color="cluster_label",
+        hover_name="title",
+        hover_data=["rating_mean", "primary_area"],
+        opacity=0.55,
+        title="UMAP: Colored by HDBSCAN Cluster (-1 = noise)",
+    )
+    fig.update_layout(height=650, width=900)
+    fig.show()
+else:
+    print("⚠ UMAP plot skipped (no embeddings)")
+
+# ── PLOT 5: Rating distributions per cluster ─────────────────────────────
+# Are clusters differentiated by review quality, or just by topic?
+# Box plots keep it readable even with many clusters.
+_rating_df = df_clustered.select(
+    pl.col("cluster_hdbscan").cast(pl.String).alias("cluster"),
+    "rating_mean",
+).to_pandas()
+_order = (
+    summary_df.sort("size", descending=True)["cluster_id"].cast(pl.String).to_list()
+)
+fig = px.box(
+    _rating_df,
+    x="cluster",
+    y="rating_mean",
+    category_orders={"cluster": _order},
+    title="Rating Distribution per Cluster (sorted by cluster size)",
+    points="outliers",
+)
+fig.update_layout(xaxis_tickangle=-30, height=420)
+fig.show()
+
 # ══════════════════════════════════════════════════════════════════════════
 # CROSS-CLUSTER STRUCTURE
 # ══════════════════════════════════════════════════════════════════════════
@@ -248,6 +412,57 @@ if centroids:
         pl.Series("bridge_ratio", bridge_ratio),
         pl.Series("dist_to_nearest_centroid", sorted_dists[:, 0]),
     )
+
+    # ── PLOT 7: Bridge ratio distribution ────────────────────────────────
+    # Left tail (ratio ≈ 1) = true bridge papers equidistant from two clusters.
+    # Right tail = papers that clearly belong to one cluster.
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(x=bridge_ratio, nbinsx=60, name="bridge ratio"))
+    fig.add_vline(
+        x=float(np.percentile(bridge_ratio, 5)),
+        line_dash="dash",
+        line_color="red",
+        annotation_text="p5 (bridge candidates)",
+    )
+    fig.update_layout(
+        title="Bridge Ratio Distribution (≈1.0 → equidistant from 2 clusters)",
+        xaxis_title="dist_2nd_nearest / dist_nearest",
+        yaxis_title="count",
+        height=380,
+    )
+    fig.show()
+
+# ── PLOT 6: Area composition per cluster ─────────────────────────────────
+# The key EDA question: which research themes live in each cluster?
+# Normalized stacked bar so small and large clusters are comparable.
+_non_noise = df_clustered.filter(pl.col("cluster_hdbscan") != -1)
+if _non_noise.shape[0] > 0:
+    _area_comp = (
+        _non_noise.group_by("cluster_hdbscan", "primary_area")
+        .len()
+        .with_columns(
+            pl.col("cluster_hdbscan").cast(pl.String).alias("cluster"),
+        )
+    )
+    # Normalise within each cluster to get fractional area breakdown
+    _area_comp = _area_comp.with_columns(
+        (pl.col("len") / pl.col("len").sum().over("cluster")).alias("fraction")
+    )
+    # Shorten long area labels for readability
+    _area_comp = _area_comp.with_columns(
+        pl.col("primary_area").str.slice(0, 40).alias("area_short")
+    )
+    fig = px.bar(
+        _area_comp.to_pandas(),
+        x="cluster",
+        y="fraction",
+        color="area_short",
+        barmode="stack",
+        title="Primary Area Composition per Cluster (normalised)",
+        labels={"fraction": "fraction of cluster", "area_short": "area"},
+    )
+    fig.update_layout(height=500, xaxis_tickangle=-30, legend_title="area (truncated)")
+    fig.show()
 
 # ── Noise point analysis ────────────────────────────────────────────────
 noise_mask = hdbscan_labels == -1
