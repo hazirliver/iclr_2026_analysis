@@ -20,12 +20,8 @@ def _():
 
 
 @app.cell
-def _(df):
-    has_embeddings = "mean_knn_distance" in df.columns
-    has_bridge = "bridge_ratio" in df.columns
-    has_clusters = "cluster_ward" in df.columns
-    print(f"Embeddings: {has_embeddings}, Bridge scores: {has_bridge}, Clusters: {has_clusters}")
-    return (has_bridge,)
+def _():
+    return
 
 
 @app.cell
@@ -34,15 +30,16 @@ def _():
         """Standardize a column to zero mean, unit variance."""
         return (col - col.mean()) / col.std()
 
-
     def area_z(col_name: str) -> pl.Expr:
         """Area-normalized z-score."""
         return (
-            (pl.col(col_name) - pl.col(col_name).mean().over("primary_area")) / pl.col(col_name).std().over("primary_area")
+            (pl.col(col_name) - pl.col(col_name).mean().over("primary_area"))
+            / pl.col(col_name).std().over("primary_area")
         ).fill_nan(0.0)
 
-
-    def print_top_papers(scored_df: pl.DataFrame, score_col: str, label: str, n: int = 20):
+    def print_top_papers(
+        scored_df: pl.DataFrame, score_col: str, label: str, n: int = 20
+    ):
         """Print top-N papers for an archetype."""
         top = scored_df.sort(score_col, descending=True).head(n)
         print(f"\n{'=' * 60}")
@@ -192,12 +189,11 @@ def _():
 
 
 @app.cell
-def _(df4, has_bridge, print_top_papers, z_score):
+def _(df4, print_top_papers, z_score):
     df5 = df4.with_columns(
         score_semantic_novel=(
-            z_score(pl.col("mean_knn_distance")) * 0.50 + z_score(pl.col("dist_to_nearest_centroid")) * 0.50
-            if has_bridge
-            else z_score(pl.col("mean_knn_distance"))
+            z_score(pl.col("mean_knn_distance")) * 0.50
+            + z_score(pl.col("dist_to_nearest_centroid")) * 0.50
         )
     )
     print_top_papers(df5, "score_semantic_novel", "SEMANTICALLY NOVEL", 15)
@@ -236,9 +232,11 @@ def _():
 
 
 @app.cell
-def _(df, df6, has_bridge):
+def _(df, df6):
     cluster_col = "cluster_ward"
-    clusters = df6.filter(pl.col(cluster_col) != -1)[cluster_col].unique().sort().to_list()
+    clusters = (
+        df6.filter(pl.col(cluster_col) != -1)[cluster_col].unique().sort().to_list()
+    )
 
     exemplars = []
     for cid in clusters:
@@ -247,11 +245,7 @@ def _(df, df6, has_bridge):
         threshold = cluster_df["rating_mean"].quantile(0.75)
         top_rated = cluster_df.filter(pl.col("rating_mean") >= threshold)
 
-        if has_bridge and "dist_to_nearest_centroid" in top_rated.columns:
-            # Pick the one closest to centroid among top-rated
-            best = top_rated.sort("dist_to_nearest_centroid").head(3)
-        else:
-            best = top_rated.sort("rating_mean", descending=True).head(3)
+        best = top_rated.sort("dist_to_nearest_centroid").head(3)
 
         exemplars.append(best.with_columns(pl.lit(cid).alias("exemplar_cluster")))
 
@@ -261,7 +255,9 @@ def _(df, df6, has_bridge):
         print(f"CLUSTER EXEMPLARS ({len(clusters)} clusters, up to 3 per cluster)")
         print(f"{'=' * 60}")
         for row in exemplar_df.iter_rows(named=True):
-            print(f"  Cluster {row['exemplar_cluster']:3d}: rating={row['rating_mean']:.1f}  {row['title'][:65]}")
+            print(
+                f"  Cluster {row['exemplar_cluster']:3d}: rating={row['rating_mean']:.1f}  {row['title'][:65]}"
+            )
     return
 
 
@@ -285,7 +281,9 @@ def _():
 def _(area_z, df6):
     df7 = df6.with_columns(
         score_area_leader=(
-            area_z("rating_mean") * 0.40 + area_z("soundness_mean") * 0.30 + area_z("contribution_mean") * 0.30
+            area_z("rating_mean") * 0.40
+            + area_z("soundness_mean") * 0.30
+            + area_z("contribution_mean") * 0.30
         )
     )
 
@@ -298,7 +296,9 @@ def _(area_z, df6):
         top = area_df.sort("score_area_leader", descending=True).head(3)
         print(f"\n  [{area}]")
         for _row in top.iter_rows(named=True):
-            print(f"    rating={_row['rating_mean']:.1f} score={_row['score_area_leader']:.2f}  {_row['title'][:65]}")
+            print(
+                f"    rating={_row['rating_mean']:.1f} score={_row['score_area_leader']:.2f}  {_row['title'][:65]}"
+            )
     return (df7,)
 
 
@@ -337,7 +337,9 @@ def _(df8):
     print(f"\nArchetype scores computed: {score_cols}")
 
     df8.write_parquet("iclr_2026_scored.parquet")
-    print(f"Saved to iclr_2026_scored.parquet ({df8.shape[0]} rows × {df8.shape[1]} columns)")
+    print(
+        f"Saved to iclr_2026_scored.parquet ({df8.shape[0]} rows × {df8.shape[1]} columns)"
+    )
     return
 
 

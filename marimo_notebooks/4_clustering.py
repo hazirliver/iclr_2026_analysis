@@ -36,22 +36,15 @@ def _():
 
 @app.cell
 def _():
-    INPUT_FILE = "iclr_2026_embeddings.parquet"
-    if not Path(INPUT_FILE).exists():
-        INPUT_FILE = "iclr_2026_features.parquet"
-
-    df = pl.read_parquet(INPUT_FILE)
-    print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns from {INPUT_FILE}")
+    df = pl.read_parquet("iclr_2026_embeddings.parquet")
+    print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
     return (df,)
 
 
 @app.cell
 def _(df):
     pca_cols = [c for c in df.columns if c.startswith("pca_")]
-    has_embeddings = len(pca_cols) > 0
-    print(
-        f"Embedding PCA columns found: {len(pca_cols)} → {'full mode' if has_embeddings else 'fallback mode'}"
-    )
+    print(f"PCA columns: {len(pca_cols)}")
 
     X = df.select(pca_cols).to_numpy()
     print(f"Clustering on PCA space: {X.shape}")

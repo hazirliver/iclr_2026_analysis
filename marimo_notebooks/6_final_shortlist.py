@@ -21,37 +21,17 @@ def _():
     df = pl.read_parquet("iclr_2026_scored.parquet")
     print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
-    has_clusters = "cluster_ward" in df.columns
-    has_semantic = "score_semantic_novel" in df.columns
-    has_bridge = "score_bridge" in df.columns
-
-    DISPLAY_COLS = [
-        "title",
-        "openreview_id",
-        "status",
-        "primary_area",
-        "rating_mean",
-        "soundness_mean",
-        "contribution_mean",
-        "site",
-    ]
-    if has_clusters:
-        DISPLAY_COLS.append("cluster_ward")
-
-
     def format_paper(row: dict, reason: str) -> str:
         """Format a paper for display."""
-        cluster = f" cluster={row.get('cluster_ward', '?')}" if has_clusters else ""
         return (
             f"  [{row['status']:8s}] rating={row['rating_mean']:.1f} "
             f"sound={row['soundness_mean']:.1f} contrib={row['contribution_mean']:.1f}"
-            f"{cluster}\n"
+            f" cluster={row['cluster_ward']}\n"
             f"    {row['title'][:80]}\n"
             f"    area={row['primary_area'][:50]}\n"
             f"    {row['site']}\n"
             f"    → {reason}"
         )
-
 
     def diversified_top_n(
         scored_df: pl.DataFrame,
@@ -75,7 +55,11 @@ def _():
 
             if area_counts.get(area, 0) >= max_per_area:
                 continue
-            if max_per_cluster and cluster is not None and cluster_counts.get(cluster, 0) >= max_per_cluster:
+            if (
+                max_per_cluster
+                and cluster is not None
+                and cluster_counts.get(cluster, 0) >= max_per_cluster
+            ):
                 continue
 
             selected.append(row)
@@ -84,7 +68,6 @@ def _():
                 cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
 
         return pl.DataFrame(selected)
-
 
     def print_list(title: str, papers: pl.DataFrame, score_col: str):
         """Print a shortlist."""
@@ -98,9 +81,6 @@ def _():
         df,
         diversified_top_n,
         format_paper,
-        has_bridge,
-        has_clusters,
-        has_semantic,
         print_list,
     )
 
@@ -189,7 +169,9 @@ def _(df):
     major_clusters = clusters.filter(pl.col("len") >= 50)[cluster_col].to_list()
 
     print(f"\n{'=' * 70}")
-    print(f"TOP PAPERS PER MAJOR CLUSTER ({len(major_clusters)} clusters with 50+ papers)")
+    print(
+        f"TOP PAPERS PER MAJOR CLUSTER ({len(major_clusters)} clusters with 50+ papers)"
+    )
     print(f"{'=' * 70}")
     for cid in major_clusters:
         cluster_df = df.filter(pl.col(cluster_col) == cid)
@@ -237,37 +219,76 @@ def _():
 
 
 @app.cell
-def _(df, format_paper, has_bridge, has_clusters, has_semantic, poster_df):
+def _(df, format_paper, poster_df):
     def _():
         print(f"\n{'=' * 70}")
         print("FINAL DIVERSIFIED 'START HERE' LIST")
         print(f"{'=' * 70}")
 
-        # Collect candidates from each archetype with their reason
-        candidates: list[tuple[str, str, float]] = []  # (openreview_id, reason, priority)
+        candidates: list[
+            tuple[str, str, float]
+        ] = []  # (openreview_id, reason, priority)
 
-        for row in df.sort("score_top_overall", descending=True).head(30).iter_rows(named=True):
-            candidates.append((row["openreview_id"], "top overall", row["score_top_overall"]))
+        for row in (
+            df.sort("score_top_overall", descending=True).head(30).iter_rows(named=True)
+        ):
+            candidates.append(
+                (row["openreview_id"], "top overall", row["score_top_overall"])
+            )
 
-        for row in poster_df.sort("score_hidden_gem", descending=True).head(20).iter_rows(named=True):
-            candidates.append((row["openreview_id"], "hidden gem", row["score_hidden_gem"]))
+        for row in (
+            poster_df.sort("score_hidden_gem", descending=True)
+            .head(20)
+            .iter_rows(named=True)
+        ):
+            candidates.append(
+                (row["openreview_id"], "hidden gem", row["score_hidden_gem"])
+            )
 
-        for row in df.sort("score_controversial", descending=True).head(15).iter_rows(named=True):
-            candidates.append((row["openreview_id"], "controversial", row["score_controversial"]))
+        for row in (
+            df.sort("score_controversial", descending=True)
+            .head(15)
+            .iter_rows(named=True)
+        ):
+            candidates.append(
+                (row["openreview_id"], "controversial", row["score_controversial"])
+            )
 
-        for row in df.sort("score_consensus", descending=True).head(15).iter_rows(named=True):
-            candidates.append((row["openreview_id"], "consensus standout", row["score_consensus"]))
+        for row in (
+            df.sort("score_consensus", descending=True).head(15).iter_rows(named=True)
+        ):
+            candidates.append(
+                (row["openreview_id"], "consensus standout", row["score_consensus"])
+            )
 
-        for row in df.sort("score_high_engagement", descending=True).head(15).iter_rows(named=True):
-            candidates.append((row["openreview_id"], "high engagement", row["score_high_engagement"]))
+        for row in (
+            df.sort("score_high_engagement", descending=True)
+            .head(15)
+            .iter_rows(named=True)
+        ):
+            candidates.append(
+                (row["openreview_id"], "high engagement", row["score_high_engagement"])
+            )
 
-        if has_semantic:
-            for row in df.sort("score_semantic_novel", descending=True).head(15).iter_rows(named=True):
-                candidates.append((row["openreview_id"], "semantically novel", row["score_semantic_novel"]))
+        for row in (
+            df.sort("score_semantic_novel", descending=True)
+            .head(15)
+            .iter_rows(named=True)
+        ):
+            candidates.append(
+                (
+                    row["openreview_id"],
+                    "semantically novel",
+                    row["score_semantic_novel"],
+                )
+            )
 
-        if has_bridge:
-            for row in df.sort("score_bridge", descending=True).head(15).iter_rows(named=True):
-                candidates.append((row["openreview_id"], "bridge paper", row["score_bridge"]))
+        for row in (
+            df.sort("score_bridge", descending=True).head(15).iter_rows(named=True)
+        ):
+            candidates.append(
+                (row["openreview_id"], "bridge paper", row["score_bridge"])
+            )
 
         # Deduplicate: keep first occurrence (highest priority archetype)
         seen = set()
@@ -282,15 +303,10 @@ def _(df, format_paper, has_bridge, has_clusters, has_semantic, poster_df):
         area_counts: dict[str, int] = {}
         cluster_counts: dict[int, int] = {}
         status_counts: dict[str, int] = {}
-        # Adapt cluster constraint to number of clusters available
-        if has_clusters:
-            n_clusters = df["cluster_ward"].n_unique()
-        else:
-            n_clusters = 0
+        n_clusters = df["cluster_ward"].n_unique()
 
         MAX_PER_AREA = 5
-        # Relax cluster cap when few clusters exist (fallback mode)
-        MAX_PER_CLUSTER = max(10, 30 // max(n_clusters, 1)) if n_clusters > 0 else None
+        MAX_PER_CLUSTER = max(10, 30 // max(n_clusters, 1))
         MAX_PER_STATUS = 25
         TARGET = 30
 
@@ -301,22 +317,23 @@ def _(df, format_paper, has_bridge, has_clusters, has_semantic, poster_df):
             paper = df.filter(pl.col("openreview_id") == oid).row(0, named=True)
             area = paper["primary_area"]
             status = paper["status"]
-            cluster = paper.get("cluster_ward")
+            cluster = paper["cluster_ward"]
 
             if area_counts.get(area, 0) >= MAX_PER_AREA:
                 continue
             if status_counts.get(status, 0) >= MAX_PER_STATUS:
                 continue
-            if MAX_PER_CLUSTER is not None and cluster is not None and cluster_counts.get(cluster, 0) >= MAX_PER_CLUSTER:
+            if cluster_counts.get(cluster, 0) >= MAX_PER_CLUSTER:
                 continue
 
             final_list.append((paper, reason))
             area_counts[area] = area_counts.get(area, 0) + 1
             status_counts[status] = status_counts.get(status, 0) + 1
-            if cluster is not None:
-                cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
+            cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
 
-        print(f"\nSelected {len(final_list)} papers from {len(unique_candidates)} candidates\n")
+        print(
+            f"\nSelected {len(final_list)} papers from {len(unique_candidates)} candidates\n"
+        )
         for i, (paper, reason) in enumerate(final_list, 1):
             print(f"{i:2d}. {format_paper(paper, reason)}\n")
 
@@ -335,15 +352,14 @@ def _():
 
 
 @app.cell
-def _(final_list, has_clusters):
+def _(final_list):
     final_areas = [p["primary_area"] for p, _ in final_list]
     final_statuses = [p["status"] for p, _ in final_list]
+    final_clusters = [p["cluster_ward"] for p, _ in final_list]
     print("\nDiversity check:")
     print(f"  Unique areas: {len(set(final_areas))}")
     print(f"  Unique statuses: {len(set(final_statuses))}")
-    if has_clusters:
-        final_clusters = [p.get("cluster_ward") for p, _ in final_list]
-        print(f"  Unique clusters: {len(set(c for c in final_clusters if c is not None))}")
+    print(f"  Unique clusters: {len(set(final_clusters))}")
     return
 
 
