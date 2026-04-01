@@ -6,11 +6,11 @@ All plots saved as interactive HTML to figures/.
 
 from pathlib import Path
 
-import polars as pl
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import polars as pl
 from plotly.subplots import make_subplots
-import numpy as np
 from scipy import stats as sp_stats
 
 FIGURES = Path("figures")
