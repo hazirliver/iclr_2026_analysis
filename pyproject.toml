@@ -1,0 +1,32 @@
+[project]
+name = "iclr-2026"
+version = "0.1.0"
+description = "Analysis of ICLR 2026 papers"
+readme = "README.md"
+authors = [
+    { name = "Arseniy Sokolov", email = "sokolov.ars.a@nebius.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "datasets>=4.8.3",
+    "duckdb[all]>=1.5.0",
+    "hdbscan>=0.8.42",
+    "marimo[recommended]>=0.21.1",
+    "openai>=2.29.0",
+    "openreview-py>=1.59.0",
+    "plotly>=6.6.0",
+    "polars[all]>=1.39.3",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "statsmodels>=0.14.6",
+    "ty>=0.0.24",
+    "umap-learn>=0.5.11",
+    "vllm>=0.16.0",
+]
+
+[project.scripts]
+iclr-2026 = "iclr_2026:main"
+
+[build-system]
+requires = ["uv_build>=0.10.12,<0.11.0"]
+build-backend = "uv_build"
