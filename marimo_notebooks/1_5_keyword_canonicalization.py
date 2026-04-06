@@ -96,22 +96,21 @@ def _():
         # Common ML abbreviations
         "rl": "reinforcement learning",
         "llm": "large language model",
-        "llms": "large language models",
+        "llms": "large language model",
         "lmm": "large multimodal model",
-        "lmms": "large multimodal models",
+        "lmms": "large multimodal model",
         "mllm": "multimodal large language model",
-        "mllms": "multimodal large language models",
+        "mllms": "multimodal large language model",
         "vlm": "vision-language model",
-        "vlms": "vision-language models",
-        "vllm": "vision-language model",
+        "vlms": "vision-language model",
         "gnn": "graph neural network",
-        "gnns": "graph neural networks",
+        "gnns": "graph neural network",
         "cnn": "convolutional neural network",
-        "cnns": "convolutional neural networks",
+        "cnns": "convolutional neural network",
         "vae": "variational autoencoder",
-        "vaes": "variational autoencoders",
+        "vaes": "variational autoencoder",
         "gan": "generative adversarial network",
-        "gans": "generative adversarial networks",
+        "gans": "generative adversarial network",
         "dpo": "direct preference optimization",
         "rlhf": "reinforcement learning from human feedback",
         "ppo": "proximal policy optimization",
@@ -124,7 +123,7 @@ def _():
         "nerf": "neural radiance fields",
         "nerfs": "neural radiance fields",
         "snn": "spiking neural network",
-        "snns": "spiking neural networks",
+        "snns": "spiking neural network",
         "ssl": "self-supervised learning",
         "cl": "continual learning",
         "tts": "text-to-speech",
@@ -162,7 +161,7 @@ def _():
 
 
 @app.cell
-def _(MANUAL_MERGES, kw_embeddings, kw_list):
+def _(MANUAL_MERGES: dict[str, str], kw_embeddings, kw_list):
     kw_to_idx = {kw: i for i, kw in enumerate(kw_list)}
 
     merged_embeddings = kw_embeddings.copy()
@@ -188,14 +187,14 @@ def _():
 
 @app.cell
 def _(merged_embeddings):
-    thresholds = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
+    thresholds = [0.05, 0.20, 0.30, 0.40, 0.45, 0.50]
     sweep_results = []
     for t in thresholds:
         sweep_clust = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=t,
             metric="cosine",
-            linkage="average",
+            linkage="ward",
         )
         sweep_labels = sweep_clust.fit_predict(merged_embeddings)
         n = len(set(sweep_labels))
@@ -228,8 +227,8 @@ def _():
 
 
 @app.cell
-def _(MANUAL_MERGES, freq_map, kw_list, merged_embeddings):
-    THRESHOLD = 0.20
+def _(MANUAL_MERGES: dict[str, str], freq_map, kw_list, merged_embeddings):
+    THRESHOLD = 0.40
 
     final_clust = AgglomerativeClustering(
         n_clusters=None,
@@ -262,16 +261,16 @@ def _(MANUAL_MERGES, freq_map, kw_list, merged_embeddings):
         for m in members:
             canonical_map[m] = canonical
         # Also map manual abbreviations that may not be in this cluster
-        for abbrev, target in MANUAL_MERGES.items():
-            if target == canonical and abbrev in canonical_map:
-                canonical_map[abbrev] = canonical
+        for _abbrev, target in MANUAL_MERGES.items():
+            if target == canonical and _abbrev in canonical_map:
+                canonical_map[_abbrev] = canonical
         cluster_info.append(
             {
                 "cluster_id": cid,
                 "canonical": canonical,
                 "size": len(members),
                 "total_freq": total_freq,
-                "members": ", ".join(members_sorted[:10]),
+                "members": ", ".join(members_sorted),
             }
         )
 
@@ -308,6 +307,12 @@ def _():
     mo.md(r"""
     ## Top 30 canonical keywords (post-canonicalization)
     """)
+    return
+
+
+@app.cell
+def _(cluster_df):
+    cluster_df
     return
 
 
@@ -355,7 +360,7 @@ def _():
 
 
 @app.cell
-def _(canonical_map, features, final_labels, kw_list):
+def _(canonical_map: dict[str, str], features, final_labels, kw_list):
     kw_to_label = {kw: int(lbl) for kw, lbl in zip(kw_list, final_labels)}
     mapping_df = pl.DataFrame(
         {
@@ -385,6 +390,18 @@ def _(canonical_map, features, final_labels, kw_list):
     print(
         f"Updated iclr_2026_features.parquet with canonical_keywords column ({updated_features.shape[1]} cols)"
     )
+    return
+
+
+@app.cell
+def _(cluster_df):
+    cluster_df
+    return
+
+
+@app.cell
+def _(cluster_df):
+    cluster_df.write_csv('keywords_clusters.tsv', separator='\t', include_header=True)
     return
 
 
