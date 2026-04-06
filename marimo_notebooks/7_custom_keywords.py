@@ -20,6 +20,18 @@ with app.setup:
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
+    # Custom Category Analysis of ICLR 2026
+
+    We manually define 8 thematic categories that reflect our research interests:
+    Agents/SWE, RL/Post-training, Inference Scaling, Infrastructure,
+    Safety/Governance, AI for Science, Robotics, and Media/Video/Games.
+    Each category is specified by a curated list of raw author keywords.
+    A paper belongs to a category if any of its keywords match.
+
+    The goal: find the best papers in each category, understand how categories
+    relate to each other, and discover truly interdisciplinary work at their
+    intersections.
+
     # 1. Define selected keywords
     """)
     return
@@ -1220,6 +1232,10 @@ def _():
 def _():
     mo.md(r"""
     # 2. Load
+
+    Loading the fully scored dataset (output of notebooks 1-5): 5,358 accepted
+    papers with review features, cluster assignments, UMAP coordinates, and
+    8 archetype scores.
     """)
     return
 
@@ -1241,6 +1257,9 @@ def _(df):
 def _():
     mo.md(r"""
     ## 2.1 Filter by keywords
+
+    Each paper is matched against the 8 keyword lists above. A paper can belong
+    to multiple categories (e.g. an "RL agent" paper matches both Agents and RL).
     """)
     return
 
@@ -1337,6 +1356,10 @@ def _(df, kw_8):
 def _():
     mo.md(r"""
     # 3. Category Metadata & Helpers
+
+    Scoring helpers recompute archetype z-scores **locally within each category
+    subset** rather than reusing global scores. A paper that is globally average
+    may still be the best in its category.
     """)
     return
 
@@ -1474,6 +1497,12 @@ def _():
 def _():
     mo.md(r"""
     # 4. Category Overview Dashboard
+
+    RL / Post-training is the largest category (740 papers), reflecting ICLR's
+    core identity. Infrastructure is the smallest (100) — a specialized niche.
+    Media/Video/Games is surprisingly large (512), driven by the generative AI
+    wave. Robotics has the highest mean rating (~5.55), while Science has the
+    lowest (~5.27) — possibly because frontier science is harder to evaluate.
     """)
     return
 
@@ -1538,6 +1567,11 @@ def _(overview_df):
 def _():
     mo.md(r"""
     # 5. Per-Category Top 10 Papers
+
+    For each category we select 10 papers via a budget-based approach using
+    **category-local** z-scores: 3 top-overall + 2 hidden gems (poster only) +
+    2 controversial + 3 consensus standouts, deduplicated and diversified across
+    Ward clusters.
     """)
     return
 
@@ -1608,6 +1642,19 @@ def _(CATEGORIES, compute_local_scores, diversified_top_n_cat, format_paper_cat)
 def _():
     mo.md(r"""
     # 6. Category x Archetype Heatmap
+
+    Each cell shows what percentage of a category's papers fall into the global
+    top-20% for that archetype. The baseline is 20% — values above indicate
+    over-representation.
+
+    Key patterns: **Science** papers are disproportionately semantically novel
+    (38.8%, nearly 2x baseline) and controversial (30.4%) — frontier research
+    explores uncharted territory and sparks disagreement. **Safety** is the most
+    debated category (24.9% controversial, 24.0% high-engagement) with the lowest
+    consensus (14.6%). **Media** and **Robotics** show the opposite profile:
+    high top-overall quality and strong reviewer consensus. **Agents** stand out
+    as the most interdisciplinary (24.6% bridge). **Inference** is the most
+    well-trodden ground — only 4.6% semantic novel, the lowest of all categories.
     """)
     return
 
@@ -1675,6 +1722,14 @@ def _(CATEGORIES, df):
 def _():
     mo.md(r"""
     # 7. Category Intersections (UpSet-style)
+
+    Our 8 categories cover 2,516 of 5,358 papers (47%). Of these, 414 belong to
+    2+ categories, and 28 span 3 or more. The dominant overlap is Agents & RL
+    (76 papers) — natural since agents typically rely on RL for training. Two
+    papers even span 4 categories.
+
+    The UpSet plot below shows multi-category intersections on the left (sorted
+    by intersection degree), with single-category sizes on the right for context.
     """)
     return
 
@@ -1929,6 +1984,13 @@ def _(CATEGORIES, CAT_NAMES, df, membership):
 def _():
     mo.md(r"""
     # 8. UMAP: Papers Colored by Category
+
+    Reusing the UMAP coordinates from the embedding pipeline (notebook 3), we
+    color each paper by its category. Categories form coherent spatial clusters:
+    Media/Video/Games occupies the far right, RL concentrates in the lower-left,
+    and Science papers scatter broadly across the upper region. Multi-category
+    papers (cyan) tend to sit at cluster boundaries. "Other" papers (gray) fill
+    the gaps — the 53% of ICLR not captured by our 8 categories.
     """)
     return
 
@@ -2012,6 +2074,12 @@ def _(CATEGORIES, CAT_NAMES, df):
 def _():
     mo.md(r"""
     # 9. Cross-Category Bridge Papers
+
+    A paper is a "bridge" if it belongs to 2+ keyword categories **and** sits
+    semantically equidistant between Ward clusters (low `bridge_ratio` from
+    notebook 4). These are truly interdisciplinary: multi-thematic by keyword
+    and multi-cluster by embedding. The best bridges connect research communities
+    that rarely overlap.
     """)
     return
 
@@ -2078,6 +2146,14 @@ def _(df, membership):
 def _():
     mo.md(r"""
     # 10. Summary
+
+    Our 8 categories carve out distinct slices of ICLR 2026, each with its own
+    "personality": Science papers push into novel semantic territory but divide
+    reviewers; Safety work sparks the most debate; Media and Robotics enjoy
+    strong reviewer consensus and high quality; and Agents serve as the
+    conference's connective tissue, bridging the most clusters. The 414
+    multi-category papers — especially the handful spanning 3-4 categories —
+    represent the most interdisciplinary work at the conference.
     """)
     return
 
