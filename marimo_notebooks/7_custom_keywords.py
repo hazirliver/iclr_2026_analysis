@@ -6,6 +6,15 @@ app = marimo.App(width="medium")
 with app.setup:
     import marimo as mo
     import polars as pl
+    import numpy as np
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    from pathlib import Path
+
+    SEED = 42
+    FIGURES = Path("figures")
+    FIGURES.mkdir(exist_ok=True)
 
 
 @app.cell(hide_code=True)
@@ -1238,62 +1247,804 @@ def _():
 
 @app.cell
 def _(df, kw_1):
-    df_1 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_1)).list.any())
+    df_1 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_1))
+        .list.any()
+    )
     df_1
-    return
+    return (df_1,)
 
 
 @app.cell
 def _(df, kw_2):
-    df_2 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_2)).list.any())
+    df_2 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_2))
+        .list.any()
+    )
     df_2
-    return
+    return (df_2,)
 
 
 @app.cell
 def _(df, kw_3):
-    df_3 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_3)).list.any())
+    df_3 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_3))
+        .list.any()
+    )
     df_3
-    return
+    return (df_3,)
 
 
 @app.cell
 def _(df, kw_4):
-    df_4 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_4)).list.any())
+    df_4 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_4))
+        .list.any()
+    )
     df_4
-    return
+    return (df_4,)
 
 
 @app.cell
 def _(df, kw_5):
-    df_5 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_5)).list.any())
+    df_5 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_5))
+        .list.any()
+    )
     df_5
-    return
+    return (df_5,)
 
 
 @app.cell
 def _(df, kw_6):
-    df_6 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_6)).list.any())
+    df_6 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_6))
+        .list.any()
+    )
     df_6
-    return
+    return (df_6,)
 
 
 @app.cell
 def _(df, kw_7):
-    df_7 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_7)).list.any())
+    df_7 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_7))
+        .list.any()
+    )
     df_7
-    return
+    return (df_7,)
 
 
 @app.cell
 def _(df, kw_8):
-    df_8 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_8)).list.any())
+    df_8 = df.filter(
+        pl.col("keywords")
+        .list.eval(pl.element().str.to_lowercase().is_in(kw_8))
+        .list.any()
+    )
     df_8
+    return (df_8,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 3. Category Metadata & Helpers
+    """)
     return
 
 
 @app.cell
+def _(
+    df_1,
+    df_2,
+    df_3,
+    df_4,
+    df_5,
+    df_6,
+    df_7,
+    df_8,
+    kw_1,
+    kw_2,
+    kw_3,
+    kw_4,
+    kw_5,
+    kw_6,
+    kw_7,
+    kw_8,
+):
+    CATEGORIES = {
+        1: {"label": "Agents / SWE", "short": "Agents", "kw": kw_1, "df": df_1},
+        2: {"label": "RL / Post-training", "short": "RL", "kw": kw_2, "df": df_2},
+        3: {"label": "Inference Scaling", "short": "Inference", "kw": kw_3, "df": df_3},
+        4: {"label": "Infrastructure", "short": "Infra", "kw": kw_4, "df": df_4},
+        5: {"label": "Safety / Governance", "short": "Safety", "kw": kw_5, "df": df_5},
+        6: {"label": "AI for Science", "short": "Science", "kw": kw_6, "df": df_6},
+        7: {"label": "Robotics", "short": "Robotics", "kw": kw_7, "df": df_7},
+        8: {"label": "Media / Video / Games", "short": "Media", "kw": kw_8, "df": df_8},
+    }
+    CAT_NAMES = {_k: _v["short"] for _k, _v in CATEGORIES.items()}
+
+    for _idx in CATEGORIES:
+        _short = CATEGORIES[_idx]["short"]
+        _n_papers = CATEGORIES[_idx]["df"].shape[0]  # ty: ignore[unresolved-attribute]
+        _n_kw = len(CATEGORIES[_idx]["kw"])  # ty: ignore[unresolved-attribute]
+        print(
+            f"  Cat {_idx} ({_short:>10s}): {_n_papers:4d} papers, {_n_kw:3d} keywords"
+        )
+    return (CATEGORIES, CAT_NAMES)
+
+
+@app.cell
 def _():
+    def _z(col: pl.Expr) -> pl.Expr:
+        """Standardize a column to zero mean, unit variance."""
+        return (col - col.mean()) / col.std()
+
+    def compute_local_scores(subset: pl.DataFrame) -> pl.DataFrame:
+        """Recompute 4 archetype scores using category-LOCAL z-scores."""
+        if subset.shape[0] < 10:
+            return subset.with_columns(
+                pl.col("score_top_overall").alias("local_top_overall"),
+                pl.col("score_hidden_gem").alias("local_hidden_gem"),
+                pl.col("score_controversial").alias("local_controversial"),
+                pl.col("score_consensus").alias("local_consensus"),
+            )
+        return subset.with_columns(
+            (
+                _z(pl.col("rating_mean")) * 0.35
+                + _z(pl.col("soundness_mean")) * 0.25
+                + _z(pl.col("contribution_mean")) * 0.25
+                - _z(pl.col("rating_std")) * 0.10
+                + _z(pl.col("confidence_mean")) * 0.05
+            )
+            .fill_nan(0.0)
+            .alias("local_top_overall"),
+            (
+                _z(pl.col("rating_mean")) * 0.30
+                + _z(pl.col("soundness_mean")) * 0.25
+                + _z(pl.col("contribution_mean")) * 0.25
+                - _z(pl.col("n_replies").cast(pl.Float64)) * 0.10
+                - _z(pl.col("total_review_wc").cast(pl.Float64)) * 0.10
+            )
+            .fill_nan(0.0)
+            .alias("local_hidden_gem"),
+            (
+                _z(pl.col("rating_std")) * 0.25
+                + _z(pl.col("rating_range").cast(pl.Float64)) * 0.25
+                + _z(pl.col("wc_questions_mean")) * 0.20
+                + _z(pl.col("n_replies").cast(pl.Float64)) * 0.15
+                + _z(pl.col("corr_rating_confidence")).abs() * 0.15
+            )
+            .fill_nan(0.0)
+            .alias("local_controversial"),
+            (
+                _z(pl.col("rating_mean")) * 0.40
+                - _z(pl.col("rating_std")) * 0.30
+                + _z(pl.col("confidence_mean")) * 0.30
+            )
+            .fill_nan(0.0)
+            .alias("local_consensus"),
+        )
+
+    def diversified_top_n_cat(
+        scored_df: pl.DataFrame,
+        score_col: str,
+        n: int,
+        max_per_cluster: int = 2,
+    ) -> pl.DataFrame:
+        """Select top-N papers within a category with cluster diversity."""
+        _ranked = scored_df.sort(score_col, descending=True)
+        _selected: list[dict] = []
+        _cluster_counts: dict[int, int] = {}
+        for _r in _ranked.iter_rows(named=True):
+            if len(_selected) >= n:
+                break
+            _cl = _r.get("cluster_ward")
+            if _cl is not None and _cluster_counts.get(_cl, 0) >= max_per_cluster:
+                continue
+            _selected.append(_r)
+            if _cl is not None:
+                _cluster_counts[_cl] = _cluster_counts.get(_cl, 0) + 1
+        return pl.DataFrame(_selected)
+
+    def format_paper_cat(row: dict, reason: str) -> str:
+        """Format a paper for display."""
+        return (
+            f"  [{row['status']:8s}] rating={row['rating_mean']:.1f} "
+            f"sound={row['soundness_mean']:.1f} contrib={row['contribution_mean']:.1f}"
+            f" cluster={row['cluster_ward']}\n"
+            f"    {row['title'][:90]}\n"
+            f"    area={row['primary_area'][:50]}\n"
+            f"    {row['site']}\n"
+            f"    -> {reason}"
+        )
+
+    return (compute_local_scores, diversified_top_n_cat, format_paper_cat)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 4. Category Overview Dashboard
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES):
+    _rows = []
+    for _idx, _cat in CATEGORIES.items():
+        _sub = _cat["df"]
+        _n = _sub.shape[0]
+        if _n == 0:
+            continue
+        _oral_pct = (_sub.filter(pl.col("status") == "Oral").shape[0] / _n) * 100
+        _top_kw = "n/a"
+        if "canonical_keywords" in _sub.columns:
+            _kw_flat = _sub.select(pl.col("canonical_keywords").explode()).to_series()
+            _top_kw = ", ".join(
+                _kw_flat.value_counts(sort=True)
+                .head(3)
+                .get_column(_kw_flat.name)
+                .to_list()
+            )
+        _rows.append(
+            {
+                "category": _cat["short"],
+                "papers": _n,
+                "oral_pct": round(_oral_pct, 1),
+                "mean_rating": round(_sub["rating_mean"].mean(), 2),
+                "median_rating": round(_sub["rating_mean"].median(), 2),
+                "mean_soundness": round(_sub["soundness_mean"].mean(), 2),
+                "mean_contribution": round(_sub["contribution_mean"].mean(), 2),
+                "top_keywords": _top_kw,
+            }
+        )
+    overview_df = pl.DataFrame(_rows)
+    overview_df
+    return (overview_df,)
+
+
+@app.cell
+def _(overview_df):
+    fig_overview = px.bar(
+        overview_df.to_pandas(),
+        y="category",
+        x="papers",
+        color="mean_rating",
+        color_continuous_scale="RdYlGn",
+        orientation="h",
+        text="papers",
+        hover_data=["oral_pct", "mean_soundness", "mean_contribution", "top_keywords"],
+        title="Papers per Category (colored by mean rating)",
+    )
+    fig_overview.update_layout(height=400, yaxis={"categoryorder": "total ascending"})
+    fig_overview.write_html(str(FIGURES / "category_overview.html"))
+    fig_overview
+    return (fig_overview,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 5. Per-Category Top 10 Papers
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES, compute_local_scores, diversified_top_n_cat, format_paper_cat):
+    all_category_picks: dict[int, list[dict]] = {}
+
+    for _idx, _cat in CATEGORIES.items():
+        _sub = _cat["df"]
+        _n = _sub.shape[0]
+        print(f"\n{'=' * 70}")
+        print(f"Category {_idx}: {_cat['label']} ({_n} papers)")
+        print(f"{'=' * 70}")
+
+        if _n == 0:
+            all_category_picks[_idx] = []
+            continue
+
+        _scored = compute_local_scores(_sub)
+        _seen: set[str] = set()
+        _picks: list[dict] = []
+
+        _budget = [
+            ("local_top_overall", 3, None, "Top overall (local)"),
+            ("local_hidden_gem", 2, "Poster", "Hidden gem (local)"),
+            ("local_controversial", 2, None, "Controversial (local)"),
+            ("local_consensus", 3, None, "Consensus standout (local)"),
+        ]
+        for _sc, _want, _sf, _label in _budget:
+            _pool = _scored if not _sf else _scored.filter(pl.col("status") == _sf)
+            _top = diversified_top_n_cat(_pool, _sc, _want + 5)
+            _added = 0
+            for _r in _top.iter_rows(named=True):
+                if len(_picks) >= 10 or _added >= _want:
+                    break
+                if _r["openreview_id"] in _seen:
+                    continue
+                _seen.add(_r["openreview_id"])
+                _rc = dict(_r)
+                _rc["_label"] = _label
+                _rc["_score"] = _r[_sc]
+                _picks.append(_rc)
+                _added += 1
+
+        if len(_picks) < 10:
+            _bf = diversified_top_n_cat(_scored, "local_top_overall", 15)
+            for _r in _bf.iter_rows(named=True):
+                if len(_picks) >= 10:
+                    break
+                if _r["openreview_id"] in _seen:
+                    continue
+                _seen.add(_r["openreview_id"])
+                _rc = dict(_r)
+                _rc["_label"] = "Top overall (backfill)"
+                _rc["_score"] = _r["local_top_overall"]
+                _picks.append(_rc)
+
+        all_category_picks[_idx] = _picks
+        for _i, _p in enumerate(_picks, 1):
+            _lbl = _p["_label"]
+            _scr = _p["_score"]
+            print(f"\n{_i}. {format_paper_cat(_p, f'{_lbl} = {_scr:.3f}')}")
+    return (all_category_picks,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 6. Category x Archetype Heatmap
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES, df):
+    _arch_cols = [
+        "score_top_overall",
+        "score_hidden_gem",
+        "score_controversial",
+        "score_high_engagement",
+        "score_semantic_novel",
+        "score_bridge",
+        "score_area_leader",
+        "score_consensus",
+    ]
+    _arch_labels = [
+        _c.replace("score_", "").replace("_", " ").title() for _c in _arch_cols
+    ]
+    _thresholds = {_c: df[_c].quantile(0.80) for _c in _arch_cols}
+
+    _hm_data: list[list[float]] = []
+    _cat_labels_hm = []
+    for _idx in sorted(CATEGORIES.keys()):
+        _cat = CATEGORIES[_idx]
+        _sub = _cat["df"]
+        _n = _sub.shape[0]
+        if _n == 0:
+            _hm_data.append([0.0] * len(_arch_cols))
+        else:
+            _row_pcts = []
+            for _c in _arch_cols:
+                _pct = (_sub.filter(pl.col(_c) > _thresholds[_c]).shape[0] / _n) * 100
+                _row_pcts.append(round(_pct, 1))
+            _hm_data.append(_row_pcts)
+        _cat_labels_hm.append(f"{_cat['short']} ({_sub.shape[0]})")
+
+    _hm_array = np.array(_hm_data)
+    fig_heatmap = go.Figure(
+        data=go.Heatmap(
+            z=_hm_array,
+            x=_arch_labels,
+            y=_cat_labels_hm,
+            colorscale="YlOrRd",
+            text=_hm_array.astype(str),
+            texttemplate="%{text}%",
+            textfont={"size": 11},
+            colorbar={"title": "% in top 20%"},
+        )
+    )
+    fig_heatmap.update_layout(
+        title="Category x Archetype: % of papers in global top-20%<br>(20% = baseline; above = over-indexed)",
+        height=450,
+        width=900,
+        xaxis_title="Archetype",
+        yaxis_title="Category",
+        yaxis={"autorange": "reversed"},
+    )
+    fig_heatmap.write_html(str(FIGURES / "category_archetype_heatmap.html"))
+    fig_heatmap
+    return (fig_heatmap,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 7. Category Intersections (UpSet-style)
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES, df):
+    membership = df.select("openreview_id")
+    cat_col_names = []
+    for _idx in sorted(CATEGORIES.keys()):
+        _col = f"in_cat_{_idx}"
+        cat_col_names.append(_col)
+        _ids = set(CATEGORIES[_idx]["df"]["openreview_id"].to_list())
+        membership = membership.with_columns(
+            pl.col("openreview_id").is_in(_ids).alias(_col)
+        )
+    membership = membership.with_columns(
+        pl.sum_horizontal(*cat_col_names).alias("n_categories")
+    )
+    print(
+        f"Papers in at least 1 category: {membership.filter(pl.col('n_categories') >= 1).shape[0]}"
+    )
+    print(
+        f"Papers in 2+ categories: {membership.filter(pl.col('n_categories') >= 2).shape[0]}"
+    )
+    print(
+        f"Papers in 3+ categories: {membership.filter(pl.col('n_categories') >= 3).shape[0]}"
+    )
+    return (membership, cat_col_names)
+
+
+@app.cell
+def _(CAT_NAMES, CATEGORIES, cat_col_names, membership):
+    _grouped = (
+        membership.group_by(cat_col_names)
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+    )
+    combo_labels: list[str] = []
+    combo_counts: list[int] = []
+    combo_sets: list[set[int]] = []
+
+    for _row in _grouped.iter_rows(named=True):
+        _participating = set()
+        for _idx in sorted(CATEGORIES.keys()):
+            if _row[f"in_cat_{_idx}"]:
+                _participating.add(_idx)
+        if len(_participating) == 0:
+            combo_labels.append("(none)")
+        else:
+            combo_labels.append(
+                " & ".join(CAT_NAMES[_i] for _i in sorted(_participating))
+            )
+        combo_counts.append(_row["count"])
+        combo_sets.append(_participating)
+
+    print("Top 15 intersection groups:")
+    for _lbl, _cnt in zip(combo_labels[:15], combo_counts[:15]):
+        print(f"  {_cnt:5d}  {_lbl}")
+    return (combo_labels, combo_counts, combo_sets)
+
+
+@app.cell
+def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
+    _upset_idx = [_i for _i, _s in enumerate(combo_sets) if len(_s) > 0][:20]
+    _bar_labels = [combo_labels[_i] for _i in _upset_idx]
+    _bar_counts = [combo_counts[_i] for _i in _upset_idx]
+    _bar_sets = [combo_sets[_i] for _i in _upset_idx]
+    _cat_list = sorted(CATEGORIES.keys())
+    _cat_names_ord = [CAT_NAMES[_c] for _c in _cat_list]
+
+    fig_upset = make_subplots(
+        rows=2,
+        cols=1,
+        row_heights=[0.6, 0.4],
+        shared_xaxes=True,
+        vertical_spacing=0.02,
+    )
+    fig_upset.add_trace(
+        go.Bar(
+            x=list(range(len(_bar_counts))),
+            y=_bar_counts,
+            marker_color="#e67e22",
+            text=_bar_counts,
+            textposition="outside",
+            name="Papers",
+            hovertext=_bar_labels,
+        ),
+        row=1,
+        col=1,
+    )
+    for _ci in range(len(_bar_sets)):
+        for _ri, _cid in enumerate(_cat_list):
+            _active = _cid in _bar_sets[_ci]
+            fig_upset.add_trace(
+                go.Scatter(
+                    x=[_ci],
+                    y=[_ri],
+                    mode="markers",
+                    marker=dict(size=12, color="#2c3e50" if _active else "#d5d8dc"),
+                    showlegend=False,
+                    hoverinfo="skip",
+                ),
+                row=2,
+                col=1,
+            )
+        _active_rows = [
+            _ri for _ri, _cid in enumerate(_cat_list) if _cid in _bar_sets[_ci]
+        ]
+        if len(_active_rows) > 1:
+            fig_upset.add_trace(
+                go.Scatter(
+                    x=[_ci, _ci],
+                    y=[min(_active_rows), max(_active_rows)],
+                    mode="lines",
+                    line=dict(color="#2c3e50", width=2),
+                    showlegend=False,
+                    hoverinfo="skip",
+                ),
+                row=2,
+                col=1,
+            )
+    fig_upset.update_layout(
+        title="Category Intersections (UpSet-style)",
+        height=600,
+        width=max(800, len(_bar_counts) * 45),
+        showlegend=False,
+        bargap=0.3,
+    )
+    fig_upset.update_xaxes(
+        tickvals=list(range(len(_bar_labels))),
+        ticktext=[""] * len(_bar_labels),
+        row=1,
+        col=1,
+    )
+    fig_upset.update_xaxes(
+        tickvals=list(range(len(_bar_labels))),
+        ticktext=[""] * len(_bar_labels),
+        row=2,
+        col=1,
+    )
+    fig_upset.update_yaxes(title_text="Papers", row=1, col=1)
+    fig_upset.update_yaxes(
+        tickvals=list(range(len(_cat_names_ord))), ticktext=_cat_names_ord, row=2, col=1
+    )
+    fig_upset.write_html(str(FIGURES / "category_upset.html"))
+    fig_upset
+    return (fig_upset,)
+
+
+@app.cell
+def _(CATEGORIES, CAT_NAMES, df, membership):
+    _multi_mask = membership.filter(pl.col("n_categories") >= 2)
+    _multi_ids = set(_multi_mask["openreview_id"].to_list())
+
+    _cat_ranks: dict[int, dict[str, int]] = {}
+    for _idx in sorted(CATEGORIES.keys()):
+        _sub = CATEGORIES[_idx]["df"].sort("score_top_overall", descending=True)
+        for _rank, _oid in enumerate(_sub["openreview_id"].to_list(), 1):
+            if _oid in _multi_ids:
+                _cat_ranks.setdefault(_idx, {})[_oid] = _rank
+
+    _multi_rows = []
+    for _row in df.filter(pl.col("openreview_id").is_in(list(_multi_ids))).iter_rows(
+        named=True
+    ):
+        _oid = _row["openreview_id"]
+        _n_cats = (
+            _multi_mask.filter(pl.col("openreview_id") == _oid)
+            .select("n_categories")
+            .item()
+        )
+        _cats_in = []
+        _rinfo: dict[str, int | None] = {}
+        for _idx in sorted(CATEGORIES.keys()):
+            _is_in = (
+                _multi_mask.filter(pl.col("openreview_id") == _oid)
+                .select(f"in_cat_{_idx}")
+                .item()
+            )
+            if _is_in:
+                _cats_in.append(CAT_NAMES[_idx])
+                _rinfo[f"rank_{CAT_NAMES[_idx]}"] = _cat_ranks.get(_idx, {}).get(_oid)
+        _multi_rows.append(
+            {
+                "title": _row["title"][:70],
+                "rating": _row["rating_mean"],
+                "status": _row["status"],
+                "n_cats": _n_cats,
+                "categories": ", ".join(_cats_in),
+                **_rinfo,
+            }
+        )
+
+    multi_cat_df = pl.DataFrame(_multi_rows).sort("n_cats", descending=True)
+    print(f"\nPapers in 2+ categories: {multi_cat_df.shape[0]}")
+    multi_cat_df.head(30)
+    return (multi_cat_df,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 8. UMAP: Papers Colored by Category
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES, CAT_NAMES, df):
+    _id_to_cats: dict[str, list[int]] = {}
+    for _idx in sorted(CATEGORIES.keys()):
+        for _oid in CATEGORIES[_idx]["df"]["openreview_id"].to_list():
+            _id_to_cats.setdefault(_oid, []).append(_idx)
+
+    _labels = []
+    _details = []
+    for _oid in df["openreview_id"].to_list():
+        _cats = _id_to_cats.get(_oid, [])
+        if len(_cats) == 0:
+            _labels.append("Other")
+            _details.append("")
+        elif len(_cats) == 1:
+            _labels.append(CAT_NAMES[_cats[0]])
+            _details.append(CAT_NAMES[_cats[0]])
+        else:
+            _labels.append("Multi-category")
+            _details.append(", ".join(CAT_NAMES[_c] for _c in _cats))
+
+    _umap_df = df.select(
+        "umap_x", "umap_y", "title", "rating_mean", "status"
+    ).with_columns(
+        pl.Series("cat_label", _labels),
+        pl.Series("categories", _details),
+    )
+
+    _color_map = {
+        "Agents": "#e74c3c",
+        "RL": "#3498db",
+        "Inference": "#2ecc71",
+        "Infra": "#9b59b6",
+        "Safety": "#e67e22",
+        "Science": "#1abc9c",
+        "Robotics": "#f39c12",
+        "Media": "#e91e63",
+        "Multi-category": "#00bcd4",
+        "Other": "#d5d8dc",
+    }
+    _cat_order = [
+        "Agents",
+        "RL",
+        "Inference",
+        "Infra",
+        "Safety",
+        "Science",
+        "Robotics",
+        "Media",
+        "Multi-category",
+        "Other",
+    ]
+
+    fig_umap_cat = px.scatter(
+        _umap_df.to_pandas(),
+        x="umap_x",
+        y="umap_y",
+        color="cat_label",
+        color_discrete_map=_color_map,
+        category_orders={"cat_label": _cat_order},
+        hover_name="title",
+        hover_data=["rating_mean", "status", "categories"],
+        opacity=0.6,
+        title="UMAP: Papers Colored by Selected Category",
+    )
+    for _trace in fig_umap_cat.data:
+        if _trace.name == "Other":
+            _trace.marker.opacity = 0.12
+            _trace.marker.size = 3
+    fig_umap_cat.update_layout(height=700, width=1100)
+    fig_umap_cat.write_html(str(FIGURES / "umap_by_category.html"))
+    fig_umap_cat
+    return (fig_umap_cat,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 9. Cross-Category Bridge Papers
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES, CAT_NAMES, df, format_paper_cat, membership):
+    _multi_ids_br = set(
+        membership.filter(pl.col("n_categories") >= 2)["openreview_id"].to_list()
+    )
+    bridge_df = df.filter(
+        pl.col("openreview_id").is_in(list(_multi_ids_br))
+        & pl.col("bridge_ratio").is_not_null()
+    ).sort("bridge_ratio")
+
+    _id_cats_br: dict[str, list[int]] = {}
+    for _idx in sorted(CATEGORIES.keys()):
+        for _oid in CATEGORIES[_idx]["df"]["openreview_id"].to_list():
+            _id_cats_br.setdefault(_oid, []).append(_idx)
+
+    print(f"Papers in 2+ categories with bridge_ratio: {bridge_df.shape[0]}")
+    print(
+        "\nTop 15 cross-category bridge papers (lowest bridge_ratio = most bridging):"
+    )
+    for _i, _row in enumerate(bridge_df.head(15).iter_rows(named=True), 1):
+        _oid = _row["openreview_id"]
+        _cats = ", ".join(CAT_NAMES[_c] for _c in _id_cats_br.get(_oid, []))
+        _br = _row["bridge_ratio"]
+        print(
+            f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={_br:.3f}, cats=[{_cats}]')}"
+        )
+    return (bridge_df,)
+
+
+@app.cell
+def _(df, membership):
+    _bridge_plot = df.join(
+        membership.select("openreview_id", "n_categories"),
+        on="openreview_id",
+    ).filter(pl.col("n_categories") >= 1)
+
+    fig_bridge = px.scatter(
+        _bridge_plot.to_pandas(),
+        x="bridge_ratio",
+        y="n_categories",
+        color="rating_mean",
+        color_continuous_scale="RdYlGn",
+        hover_name="title",
+        hover_data=["status", "primary_area"],
+        opacity=0.5,
+        title="Semantic Bridge Ratio vs Number of Categories",
+    )
+    fig_bridge.update_layout(
+        height=500,
+        width=800,
+        xaxis_title="Bridge Ratio (lower = more bridging)",
+        yaxis_title="Number of Categories",
+    )
+    fig_bridge.write_html(str(FIGURES / "bridge_vs_categories.html"))
+    fig_bridge
+    return (fig_bridge,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # 10. Summary
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES, all_category_picks, membership):
+    _total = sum(len(_v) for _v in all_category_picks.values())
+    _unique_ids = set()
+    for _pl in all_category_picks.values():
+        for _p in _pl:
+            _unique_ids.add(_p["openreview_id"])
+    _in_any = membership.filter(pl.col("n_categories") >= 1).shape[0]
+    _in_multi = membership.filter(pl.col("n_categories") >= 2).shape[0]
+
+    print(f"Categories: {len(CATEGORIES)}")
+    print(f"Papers in at least 1 category: {_in_any}")
+    print(f"Papers in 2+ categories: {_in_multi}")
+    print(f"Total per-category picks: {_total}")
+    print(f"Unique picks across all categories: {len(_unique_ids)}")
+    print(f"Figures saved to: {FIGURES}/")
     return
 
 
