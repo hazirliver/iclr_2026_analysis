@@ -1487,15 +1487,17 @@ def _(CATEGORIES):
         if _n == 0:
             continue
         _oral_pct = (_sub.filter(pl.col("status") == "Oral").shape[0] / _n) * 100
-        _top_kw = "n/a"
-        if "canonical_keywords" in _sub.columns:
-            _kw_flat = _sub.select(pl.col("canonical_keywords").explode()).to_series()
-            _top_kw = ", ".join(
-                _kw_flat.value_counts(sort=True)
-                .head(3)
-                .get_column(_kw_flat.name)
-                .to_list()
-            )
+        _kw_col = (
+            "canonical_keywords" if "canonical_keywords" in _sub.columns else "keywords"
+        )
+        _kw_flat = (
+            _sub.select(pl.col(_kw_col).explode().str.to_lowercase())
+            .to_series()
+            .drop_nulls()
+        )
+        _top_kw = ", ".join(
+            _kw_flat.value_counts(sort=True).head(3).get_column(_kw_flat.name).to_list()
+        )
         _rows.append(
             {
                 "category": _cat["short"],
@@ -1728,20 +1730,55 @@ def _(CAT_NAMES, CATEGORIES, cat_col_names, membership):
         combo_counts.append(_row["count"])
         combo_sets.append(_participating)
 
-    print("Top 15 intersection groups:")
-    for _lbl, _cnt in zip(combo_labels[:15], combo_counts[:15]):
-        print(f"  {_cnt:5d}  {_lbl}")
+    # Print single-category sizes, then all multi-category intersections
+    print("Single-category sizes:")
+    for _lbl, _cnt, _s in zip(combo_labels, combo_counts, combo_sets):
+        if len(_s) == 1:
+            print(f"  {_cnt:5d}  {_lbl}")
+
+    # All multi-category intersections (2+), sorted by n_cats desc then count desc
+    _multi = [
+        (_lbl, _cnt, _s)
+        for _lbl, _cnt, _s in zip(combo_labels, combo_counts, combo_sets)
+        if len(_s) >= 2
+    ]
+    _multi.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
+    print(
+        f"\nMulti-category intersections ({len(_multi)} groups, {sum(_x[1] for _x in _multi)} papers):"
+    )
+    for _lbl, _cnt, _s in _multi:
+        print(f"  {_cnt:5d}  ({len(_s)} cats)  {_lbl}")
     return (combo_labels, combo_counts, combo_sets)
 
 
 @app.cell
 def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
-    _upset_idx = [_i for _i, _s in enumerate(combo_sets) if len(_s) > 0][:20]
-    _bar_labels = [combo_labels[_i] for _i in _upset_idx]
-    _bar_counts = [combo_counts[_i] for _i in _upset_idx]
-    _bar_sets = [combo_sets[_i] for _i in _upset_idx]
+    # Sort: multi-category first (by n_cats desc, then count desc), then singles by count desc
+    _all = list(zip(combo_labels, combo_counts, combo_sets, range(len(combo_sets))))
+    _all = [(_l, _c, _s, _i) for _l, _c, _s, _i in _all if len(_s) > 0]
+    _all.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
+    # Take all multi-cat groups + top single-cat groups to fill up to 25 bars
+    _multi_bars = [_x for _x in _all if len(_x[2]) >= 2]
+    _single_bars = [_x for _x in _all if len(_x[2]) == 1]
+    _bars = _multi_bars + _single_bars[: max(0, 25 - len(_multi_bars))]
+
+    _bar_labels = [_x[0] for _x in _bars]
+    _bar_counts = [_x[1] for _x in _bars]
+    _bar_sets = [_x[2] for _x in _bars]
     _cat_list = sorted(CATEGORIES.keys())
     _cat_names_ord = [CAT_NAMES[_c] for _c in _cat_list]
+
+    # Color bars by number of participating categories
+    _bar_colors = [
+        "#c0392c"
+        if len(_s) >= 4
+        else "#e67e22"
+        if len(_s) >= 3
+        else "#f39c12"
+        if len(_s) >= 2
+        else "#3498db"
+        for _s in _bar_sets
+    ]
 
     fig_upset = make_subplots(
         rows=2,
@@ -1754,7 +1791,7 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
         go.Bar(
             x=list(range(len(_bar_counts))),
             y=_bar_counts,
-            marker_color="#e67e22",
+            marker_color=_bar_colors,
             text=_bar_counts,
             textposition="outside",
             name="Papers",
@@ -1794,10 +1831,23 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
                 row=2,
                 col=1,
             )
+    # Vertical separator line between multi-cat and single-cat sections
+    if _multi_bars and _single_bars:
+        _sep_x = len(_multi_bars) - 0.5
+        for _row_n in [1, 2]:
+            fig_upset.add_vline(
+                x=_sep_x,
+                line_dash="dash",
+                line_color="gray",
+                opacity=0.5,
+                row=_row_n,
+                col=1,
+            )
     fig_upset.update_layout(
-        title="Category Intersections (UpSet-style)",
-        height=600,
-        width=max(800, len(_bar_counts) * 45),
+        title="Category Intersections (UpSet-style)"
+        "<br><sub>Left of dashed line: multi-category | Right: single-category</sub>",
+        height=650,
+        width=max(900, len(_bar_counts) * 40),
         showlegend=False,
         bargap=0.3,
     )
@@ -1815,7 +1865,10 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
     )
     fig_upset.update_yaxes(title_text="Papers", row=1, col=1)
     fig_upset.update_yaxes(
-        tickvals=list(range(len(_cat_names_ord))), ticktext=_cat_names_ord, row=2, col=1
+        tickvals=list(range(len(_cat_names_ord))),
+        ticktext=_cat_names_ord,
+        row=2,
+        col=1,
     )
     fig_upset.write_html(str(FIGURES / "category_upset.html"))
     fig_upset
