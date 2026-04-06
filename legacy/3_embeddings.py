@@ -19,12 +19,12 @@ from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 import umap
 
-EMBEDDINGS_FILE = Path("embeddings.parquet")
-OUTPUT_FILE = "iclr_2026_embeddings.parquet"
+EMBEDDINGS_FILE = Path("../embeddings.parquet")
+OUTPUT_FILE = "../iclr_2026_embeddings.parquet"
 SEED = 42
 np.random.seed(SEED)
 
-features = pl.read_parquet("iclr_2026_features.parquet")
+features = pl.read_parquet("../iclr_2026_features.parquet")
 print(f"Loaded features: {features.shape[0]} rows × {features.shape[1]} columns")
 
 # ── Export texts (idempotent — safe to re-run) ────────────────────────────

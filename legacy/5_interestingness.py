@@ -10,7 +10,7 @@ import polars as pl
 SEED = 42
 np.random.seed(SEED)
 
-df = pl.read_parquet("iclr_2026_clustered.parquet")
+df = pl.read_parquet("../iclr_2026_clustered.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 has_embeddings = "mean_knn_distance" in df.columns

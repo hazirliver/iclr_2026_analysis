@@ -13,10 +13,10 @@ import polars as pl
 from plotly.subplots import make_subplots
 from scipy import stats as sp_stats
 
-FIGURES = Path("figures")
+FIGURES = Path("../figures")
 FIGURES.mkdir(exist_ok=True)
 
-df = pl.read_parquet("iclr_2026_features.parquet")
+df = pl.read_parquet("../iclr_2026_features.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 # ══════════════════════════════════════════════════════════════════════════

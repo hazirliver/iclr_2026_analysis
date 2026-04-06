@@ -6,7 +6,7 @@ Enforces diversity: no more than N papers from any single cluster, area, or stat
 
 import polars as pl
 
-df = pl.read_parquet("iclr_2026_scored.parquet")
+df = pl.read_parquet("../iclr_2026_scored.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 has_clusters = "cluster_ward" in df.columns

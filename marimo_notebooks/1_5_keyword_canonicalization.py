@@ -194,7 +194,7 @@ def _(merged_embeddings):
             n_clusters=None,
             distance_threshold=t,
             metric="cosine",
-            linkage="ward",
+            linkage="average",
         )
         sweep_labels = sweep_clust.fit_predict(merged_embeddings)
         n = len(set(sweep_labels))

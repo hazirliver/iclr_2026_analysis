@@ -11,10 +11,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-FIGURES = Path("figures")
+FIGURES = Path("../figures")
 FIGURES.mkdir(exist_ok=True)
 
-df = pl.read_parquet("iclr_2026_scored.parquet")
+df = pl.read_parquet("../iclr_2026_scored.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 has_umap = "umap_x" in df.columns

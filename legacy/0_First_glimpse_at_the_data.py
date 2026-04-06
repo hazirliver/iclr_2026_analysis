@@ -17,7 +17,7 @@ iclr_2026_raw = iclr_2026_raw.with_columns(
     pdf_link=pl.col("site").str.replace("forum", "pdf"),
 )
 iclr_2026_raw.write_parquet("iclr_2026_raw.parquet")
-iclr_2026_raw = pl.read_parquet("iclr_2026_raw.parquet")
+iclr_2026_raw = pl.read_parquet("../iclr_2026_raw.parquet")
 
 
 iclr_2026_raw.head()

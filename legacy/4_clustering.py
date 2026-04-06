@@ -27,14 +27,14 @@ from sklearn.preprocessing import StandardScaler
 
 SEED = 42
 np.random.seed(SEED)
-FIGURES = Path("figures")
+FIGURES = Path("../figures")
 FIGURES.mkdir(exist_ok=True)
 # Inline progress plots use .show() — not saved to figures/
 
 # ── Load data ────────────────────────────────────────────────────────────
-INPUT_FILE = "iclr_2026_embeddings.parquet"
+INPUT_FILE = "../iclr_2026_embeddings.parquet"
 if not Path(INPUT_FILE).exists():
-    INPUT_FILE = "iclr_2026_features.parquet"
+    INPUT_FILE = "../iclr_2026_features.parquet"
 
 df = pl.read_parquet(INPUT_FILE)
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns from {INPUT_FILE}")

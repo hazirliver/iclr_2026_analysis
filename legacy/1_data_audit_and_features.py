@@ -8,7 +8,7 @@ import polars as pl
 import numpy as np
 
 # ── Load ─────────────────────────────────────────────────────────────────
-df = pl.read_parquet("iclr_2026_accepted.parquet")
+df = pl.read_parquet("../iclr_2026_accepted.parquet")
 print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
 
 # ── 1. Basic integrity ──────────────────────────────────────────────────
