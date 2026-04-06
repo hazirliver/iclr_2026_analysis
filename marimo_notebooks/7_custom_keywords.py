@@ -2062,8 +2062,9 @@ def _(CATEGORIES, CAT_NAMES, df):
     )
     for _trace in fig_umap_cat.data:
         if _trace.name == "Other":
-            _trace.marker.opacity = 0.12
-            _trace.marker.size = 3
+            _trace.marker.opacity = 0.35
+            _trace.marker.size = 4
+            _trace.marker.color = "#bdc3c7"
     fig_umap_cat.update_layout(height=700, width=1100)
     fig_umap_cat.write_html(str(FIGURES / "umap_by_category.html"))
     fig_umap_cat
