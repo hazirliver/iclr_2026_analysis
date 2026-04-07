@@ -1393,15 +1393,13 @@ def _(
         7: {"label": "Robotics", "short": "Robotics", "kw": kw_7, "df": df_7},
         8: {"label": "Media / Video / Games", "short": "Media", "kw": kw_8, "df": df_8},
     }
-    CAT_NAMES = {_k: _v["short"] for _k, _v in CATEGORIES.items()}
+    CAT_NAMES = {k: _v["short"] for k, _v in CATEGORIES.items()}
 
     for _idx in CATEGORIES:
-        _short = CATEGORIES[_idx]["short"]
-        _n_papers = CATEGORIES[_idx]["df"].shape[0]  # ty: ignore[unresolved-attribute]
-        _n_kw = len(CATEGORIES[_idx]["kw"])  # ty: ignore[unresolved-attribute]
-        print(
-            f"  Cat {_idx} ({_short:>10s}): {_n_papers:4d} papers, {_n_kw:3d} keywords"
-        )
+        short = CATEGORIES[_idx]["short"]
+        n_papers = CATEGORIES[_idx]["df"].shape[0]  # ty: ignore[unresolved-attribute]
+        n_kw = len(CATEGORIES[_idx]["kw"])  # ty: ignore[unresolved-attribute]
+        print(f"  Cat {_idx} ({short:>10s}): {n_papers:4d} papers, {n_kw:3d} keywords")
     return (CATEGORIES, CAT_NAMES)
 
 
@@ -1464,19 +1462,19 @@ def _():
         max_per_cluster: int = 2,
     ) -> pl.DataFrame:
         """Select top-N papers within a category with cluster diversity."""
-        _ranked = scored_df.sort(score_col, descending=True)
-        _selected: list[dict] = []
-        _cluster_counts: dict[int, int] = {}
-        for _r in _ranked.iter_rows(named=True):
-            if len(_selected) >= n:
+        ranked = scored_df.sort(score_col, descending=True)
+        selected: list[dict] = []
+        cluster_counts: dict[int, int] = {}
+        for _r in ranked.iter_rows(named=True):
+            if len(selected) >= n:
                 break
-            _cl = _r.get("cluster_ward")
-            if _cl is not None and _cluster_counts.get(_cl, 0) >= max_per_cluster:
+            cl = _r.get("cluster_ward")
+            if cl is not None and cluster_counts.get(cl, 0) >= max_per_cluster:
                 continue
-            _selected.append(_r)
-            if _cl is not None:
-                _cluster_counts[_cl] = _cluster_counts.get(_cl, 0) + 1
-        return pl.DataFrame(_selected)
+            selected.append(_r)
+            if cl is not None:
+                cluster_counts[cl] = cluster_counts.get(cl, 0) + 1
+        return pl.DataFrame(selected)
 
     def format_paper_cat(row: dict, reason: str) -> str:
         """Format a paper for display."""
@@ -1509,37 +1507,37 @@ def _():
 
 @app.cell
 def _(CATEGORIES):
-    _rows = []
+    rows = []
     for _idx, _cat in CATEGORIES.items():
         _sub = _cat["df"]
         _n = _sub.shape[0]
         if _n == 0:
             continue
-        _oral_pct = (_sub.filter(pl.col("status") == "Oral").shape[0] / _n) * 100
-        _kw_col = (
+        oral_pct = (_sub.filter(pl.col("status") == "Oral").shape[0] / _n) * 100
+        kw_col = (
             "canonical_keywords" if "canonical_keywords" in _sub.columns else "keywords"
         )
-        _kw_flat = (
-            _sub.select(pl.col(_kw_col).explode().str.to_lowercase())
+        kw_flat = (
+            _sub.select(pl.col(kw_col).explode().str.to_lowercase())
             .to_series()
             .drop_nulls()
         )
-        _top_kw = ", ".join(
-            _kw_flat.value_counts(sort=True).head(3).get_column(_kw_flat.name).to_list()
+        top_kw = ", ".join(
+            kw_flat.value_counts(sort=True).head(3).get_column(kw_flat.name).to_list()
         )
-        _rows.append(
+        rows.append(
             {
                 "category": _cat["short"],
                 "papers": _n,
-                "oral_pct": round(_oral_pct, 1),
+                "oral_pct": round(oral_pct, 1),
                 "mean_rating": round(_sub["rating_mean"].mean(), 2),
                 "median_rating": round(_sub["rating_mean"].median(), 2),
                 "mean_soundness": round(_sub["soundness_mean"].mean(), 2),
                 "mean_contribution": round(_sub["contribution_mean"].mean(), 2),
-                "top_keywords": _top_kw,
+                "top_keywords": top_kw,
             }
         )
-    overview_df = pl.DataFrame(_rows)
+    overview_df = pl.DataFrame(rows)
     overview_df
     return (overview_df,)
 
@@ -1591,50 +1589,50 @@ def _(CATEGORIES, compute_local_scores, diversified_top_n_cat, format_paper_cat)
             all_category_picks[_idx] = []
             continue
 
-        _scored = compute_local_scores(_sub)
-        _seen: set[str] = set()
-        _picks: list[dict] = []
+        scored = compute_local_scores(_sub)
+        seen: set[str] = set()
+        picks: list[dict] = []
 
-        _budget = [
+        budget = [
             ("local_top_overall", 3, None, "Top overall (local)"),
             ("local_hidden_gem", 2, "Poster", "Hidden gem (local)"),
             ("local_controversial", 2, None, "Controversial (local)"),
             ("local_consensus", 3, None, "Consensus standout (local)"),
         ]
-        for _sc, _want, _sf, _label in _budget:
-            _pool = _scored if not _sf else _scored.filter(pl.col("status") == _sf)
-            _top = diversified_top_n_cat(_pool, _sc, _want + 5)
-            _added = 0
-            for _r in _top.iter_rows(named=True):
-                if len(_picks) >= 10 or _added >= _want:
+        for sc, want, sf, label in budget:
+            pool = scored if not sf else scored.filter(pl.col("status") == sf)
+            top = diversified_top_n_cat(pool, sc, want + 5)
+            added = 0
+            for _r in top.iter_rows(named=True):
+                if len(picks) >= 10 or added >= want:
                     break
-                if _r["openreview_id"] in _seen:
+                if _r["openreview_id"] in seen:
                     continue
-                _seen.add(_r["openreview_id"])
-                _rc = dict(_r)
-                _rc["_label"] = _label
-                _rc["_score"] = _r[_sc]
-                _picks.append(_rc)
-                _added += 1
+                seen.add(_r["openreview_id"])
+                rc = dict(_r)
+                rc["label"] = label
+                rc["_score"] = _r[sc]
+                picks.append(rc)
+                added += 1
 
-        if len(_picks) < 10:
-            _bf = diversified_top_n_cat(_scored, "local_top_overall", 15)
-            for _r in _bf.iter_rows(named=True):
-                if len(_picks) >= 10:
+        if len(picks) < 10:
+            bf = diversified_top_n_cat(scored, "local_top_overall", 15)
+            for _r in bf.iter_rows(named=True):
+                if len(picks) >= 10:
                     break
-                if _r["openreview_id"] in _seen:
+                if _r["openreview_id"] in seen:
                     continue
-                _seen.add(_r["openreview_id"])
-                _rc = dict(_r)
-                _rc["_label"] = "Top overall (backfill)"
-                _rc["_score"] = _r["local_top_overall"]
-                _picks.append(_rc)
+                seen.add(_r["openreview_id"])
+                rc = dict(_r)
+                rc["label"] = "Top overall (backfill)"
+                rc["_score"] = _r["local_top_overall"]
+                picks.append(rc)
 
-        all_category_picks[_idx] = _picks
-        for _i, _p in enumerate(_picks, 1):
-            _lbl = _p["_label"]
-            _scr = _p["_score"]
-            print(f"\n{_i}. {format_paper_cat(_p, f'{_lbl} = {_scr:.3f}')}")
+        all_category_picks[_idx] = picks
+        for _i, _p in enumerate(picks, 1):
+            _lbl = _p["label"]
+            scr = _p["_score"]
+            print(f"\n{_i}. {format_paper_cat(_p, f'{_lbl} = {scr:.3f}')}")
     return (all_category_picks,)
 
 
@@ -1661,7 +1659,7 @@ def _():
 
 @app.cell
 def _(CATEGORIES, df):
-    _arch_cols = [
+    arch_cols = [
         "score_top_overall",
         "score_hidden_gem",
         "score_controversial",
@@ -1671,35 +1669,35 @@ def _(CATEGORIES, df):
         "score_area_leader",
         "score_consensus",
     ]
-    _arch_labels = [
-        _c.replace("score_", "").replace("_", " ").title() for _c in _arch_cols
+    arch_labels = [
+        _c.replace("score_", "").replace("_", " ").title() for _c in arch_cols
     ]
-    _thresholds = {_c: df[_c].quantile(0.80) for _c in _arch_cols}
+    thresholds = {_c: df[_c].quantile(0.80) for _c in arch_cols}
 
-    _hm_data: list[list[float]] = []
-    _cat_labels_hm = []
+    hm_data: list[list[float]] = []
+    cat_labels_hm = []
     for _idx in sorted(CATEGORIES.keys()):
         _cat = CATEGORIES[_idx]
         _sub = _cat["df"]
         _n = _sub.shape[0]
         if _n == 0:
-            _hm_data.append([0.0] * len(_arch_cols))
+            hm_data.append([0.0] * len(arch_cols))
         else:
-            _row_pcts = []
-            for _c in _arch_cols:
-                _pct = (_sub.filter(pl.col(_c) > _thresholds[_c]).shape[0] / _n) * 100
-                _row_pcts.append(round(_pct, 1))
-            _hm_data.append(_row_pcts)
-        _cat_labels_hm.append(f"{_cat['short']} ({_sub.shape[0]})")
+            row_pcts = []
+            for _c in arch_cols:
+                pct = (_sub.filter(pl.col(_c) > thresholds[_c]).shape[0] / _n) * 100
+                row_pcts.append(round(pct, 1))
+            hm_data.append(row_pcts)
+        cat_labels_hm.append(f"{_cat['short']} ({_sub.shape[0]})")
 
-    _hm_array = np.array(_hm_data)
+    hm_array = np.array(hm_data)
     fig_heatmap = go.Figure(
         data=go.Heatmap(
-            z=_hm_array,
-            x=_arch_labels,
-            y=_cat_labels_hm,
+            z=hm_array,
+            x=arch_labels,
+            y=cat_labels_hm,
             colorscale="YlOrRd",
-            text=_hm_array.astype(str),
+            text=hm_array.astype(str),
             texttemplate="%{text}%",
             textfont={"size": 11},
             colorbar={"title": "% in top 20%"},
@@ -1739,11 +1737,11 @@ def _(CATEGORIES, df):
     membership = df.select("openreview_id")
     cat_col_names = []
     for _idx in sorted(CATEGORIES.keys()):
-        _col = f"in_cat_{_idx}"
-        cat_col_names.append(_col)
-        _ids = set(CATEGORIES[_idx]["df"]["openreview_id"].to_list())
+        col = f"in_cat_{_idx}"
+        cat_col_names.append(col)
+        ids = set(CATEGORIES[_idx]["df"]["openreview_id"].to_list())
         membership = membership.with_columns(
-            pl.col("openreview_id").is_in(_ids).alias(_col)
+            pl.col("openreview_id").is_in(ids).alias(col)
         )
     membership = membership.with_columns(
         pl.sum_horizontal(*cat_col_names).alias("n_categories")
@@ -1762,7 +1760,7 @@ def _(CATEGORIES, df):
 
 @app.cell
 def _(CAT_NAMES, CATEGORIES, cat_col_names, membership):
-    _grouped = (
+    grouped = (
         membership.group_by(cat_col_names)
         .agg(pl.len().alias("count"))
         .sort("count", descending=True)
@@ -1771,60 +1769,60 @@ def _(CAT_NAMES, CATEGORIES, cat_col_names, membership):
     combo_counts: list[int] = []
     combo_sets: list[set[int]] = []
 
-    for _row in _grouped.iter_rows(named=True):
-        _participating = set()
+    for _row in grouped.iter_rows(named=True):
+        participating = set()
         for _idx in sorted(CATEGORIES.keys()):
             if _row[f"in_cat_{_idx}"]:
-                _participating.add(_idx)
-        if len(_participating) == 0:
+                participating.add(_idx)
+        if len(participating) == 0:
             combo_labels.append("(none)")
         else:
             combo_labels.append(
-                " & ".join(CAT_NAMES[_i] for _i in sorted(_participating))
+                " & ".join(CAT_NAMES[_i] for _i in sorted(participating))
             )
         combo_counts.append(_row["count"])
-        combo_sets.append(_participating)
+        combo_sets.append(participating)
 
     # Print single-category sizes, then all multi-category intersections
     print("Single-category sizes:")
-    for _lbl, _cnt, _s in zip(combo_labels, combo_counts, combo_sets):
+    for _lbl, cnt, _s in zip(combo_labels, combo_counts, combo_sets):
         if len(_s) == 1:
-            print(f"  {_cnt:5d}  {_lbl}")
+            print(f"  {cnt:5d}  {_lbl}")
 
     # All multi-category intersections (2+), sorted by n_cats desc then count desc
-    _multi = [
-        (_lbl, _cnt, _s)
-        for _lbl, _cnt, _s in zip(combo_labels, combo_counts, combo_sets)
+    multi = [
+        (_lbl, cnt, _s)
+        for _lbl, cnt, _s in zip(combo_labels, combo_counts, combo_sets)
         if len(_s) >= 2
     ]
-    _multi.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
+    multi.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
     print(
-        f"\nMulti-category intersections ({len(_multi)} groups, {sum(_x[1] for _x in _multi)} papers):"
+        f"\nMulti-category intersections ({len(multi)} groups, {sum(_x[1] for _x in multi)} papers):"
     )
-    for _lbl, _cnt, _s in _multi:
-        print(f"  {_cnt:5d}  ({len(_s)} cats)  {_lbl}")
+    for _lbl, cnt, _s in multi:
+        print(f"  {cnt:5d}  ({len(_s)} cats)  {_lbl}")
     return (combo_labels, combo_counts, combo_sets)
 
 
 @app.cell
 def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
     # Sort: multi-category first (by n_cats desc, then count desc), then singles by count desc
-    _all = list(zip(combo_labels, combo_counts, combo_sets, range(len(combo_sets))))
-    _all = [(_l, _c, _s, _i) for _l, _c, _s, _i in _all if len(_s) > 0]
-    _all.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
+    combos = list(zip(combo_labels, combo_counts, combo_sets, range(len(combo_sets))))
+    combos = [(lbl, _c, _s, _i) for lbl, _c, _s, _i in combos if len(_s) > 0]
+    combos.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
     # Take all multi-cat groups + top single-cat groups to fill up to 25 bars
-    _multi_bars = [_x for _x in _all if len(_x[2]) >= 2]
-    _single_bars = [_x for _x in _all if len(_x[2]) == 1]
-    _bars = _multi_bars + _single_bars[: max(0, 25 - len(_multi_bars))]
+    multi_bars = [_x for _x in combos if len(_x[2]) >= 2]
+    single_bars = [_x for _x in combos if len(_x[2]) == 1]
+    bars = multi_bars + single_bars[: max(0, 25 - len(multi_bars))]
 
-    _bar_labels = [_x[0] for _x in _bars]
-    _bar_counts = [_x[1] for _x in _bars]
-    _bar_sets = [_x[2] for _x in _bars]
-    _cat_list = sorted(CATEGORIES.keys())
-    _cat_names_ord = [CAT_NAMES[_c] for _c in _cat_list]
+    bar_labels = [_x[0] for _x in bars]
+    bar_counts = [_x[1] for _x in bars]
+    bar_sets = [_x[2] for _x in bars]
+    cat_list = sorted(CATEGORIES.keys())
+    cat_names_ord = [CAT_NAMES[_c] for _c in cat_list]
 
     # Color bars by number of participating categories
-    _bar_colors = [
+    bar_colors = [
         "#c0392c"
         if len(_s) >= 4
         else "#e67e22"
@@ -1832,7 +1830,7 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
         else "#f39c12"
         if len(_s) >= 2
         else "#3498db"
-        for _s in _bar_sets
+        for _s in bar_sets
     ]
 
     fig_upset = make_subplots(
@@ -1844,40 +1842,38 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
     )
     fig_upset.add_trace(
         go.Bar(
-            x=list(range(len(_bar_counts))),
-            y=_bar_counts,
-            marker_color=_bar_colors,
-            text=_bar_counts,
+            x=list(range(len(bar_counts))),
+            y=bar_counts,
+            marker_color=bar_colors,
+            text=bar_counts,
             textposition="outside",
             name="Papers",
-            hovertext=_bar_labels,
+            hovertext=bar_labels,
         ),
         row=1,
         col=1,
     )
-    for _ci in range(len(_bar_sets)):
-        for _ri, _cid in enumerate(_cat_list):
-            _active = _cid in _bar_sets[_ci]
+    for ci in range(len(bar_sets)):
+        for ri, cid in enumerate(cat_list):
+            active = cid in bar_sets[ci]
             fig_upset.add_trace(
                 go.Scatter(
-                    x=[_ci],
-                    y=[_ri],
+                    x=[ci],
+                    y=[ri],
                     mode="markers",
-                    marker=dict(size=12, color="#2c3e50" if _active else "#d5d8dc"),
+                    marker=dict(size=12, color="#2c3e50" if active else "#d5d8dc"),
                     showlegend=False,
                     hoverinfo="skip",
                 ),
                 row=2,
                 col=1,
             )
-        _active_rows = [
-            _ri for _ri, _cid in enumerate(_cat_list) if _cid in _bar_sets[_ci]
-        ]
-        if len(_active_rows) > 1:
+        active_rows = [ri for ri, cid in enumerate(cat_list) if cid in bar_sets[ci]]
+        if len(active_rows) > 1:
             fig_upset.add_trace(
                 go.Scatter(
-                    x=[_ci, _ci],
-                    y=[min(_active_rows), max(_active_rows)],
+                    x=[ci, ci],
+                    y=[min(active_rows), max(active_rows)],
                     mode="lines",
                     line=dict(color="#2c3e50", width=2),
                     showlegend=False,
@@ -1887,41 +1883,41 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
                 col=1,
             )
     # Vertical separator line between multi-cat and single-cat sections
-    if _multi_bars and _single_bars:
-        _sep_x = len(_multi_bars) - 0.5
-        for _row_n in [1, 2]:
+    if multi_bars and single_bars:
+        sep_x = len(multi_bars) - 0.5
+        for row_n in [1, 2]:
             fig_upset.add_vline(
-                x=_sep_x,
+                x=sep_x,
                 line_dash="dash",
                 line_color="gray",
                 opacity=0.5,
-                row=_row_n,
+                row=row_n,
                 col=1,
             )
     fig_upset.update_layout(
         title="Category Intersections (UpSet-style)"
         "<br><sub>Left of dashed line: multi-category | Right: single-category</sub>",
         height=650,
-        width=max(900, len(_bar_counts) * 40),
+        width=max(900, len(bar_counts) * 40),
         showlegend=False,
         bargap=0.3,
     )
     fig_upset.update_xaxes(
-        tickvals=list(range(len(_bar_labels))),
-        ticktext=[""] * len(_bar_labels),
+        tickvals=list(range(len(bar_labels))),
+        ticktext=[""] * len(bar_labels),
         row=1,
         col=1,
     )
     fig_upset.update_xaxes(
-        tickvals=list(range(len(_bar_labels))),
-        ticktext=[""] * len(_bar_labels),
+        tickvals=list(range(len(bar_labels))),
+        ticktext=[""] * len(bar_labels),
         row=2,
         col=1,
     )
     fig_upset.update_yaxes(title_text="Papers", row=1, col=1)
     fig_upset.update_yaxes(
-        tickvals=list(range(len(_cat_names_ord))),
-        ticktext=_cat_names_ord,
+        tickvals=list(range(len(cat_names_ord))),
+        ticktext=cat_names_ord,
         row=2,
         col=1,
     )
@@ -1932,49 +1928,49 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
 
 @app.cell
 def _(CATEGORIES, CAT_NAMES, df, membership):
-    _multi_mask = membership.filter(pl.col("n_categories") >= 2)
-    _multi_ids = set(_multi_mask["openreview_id"].to_list())
+    multi_mask = membership.filter(pl.col("n_categories") >= 2)
+    multi_ids = set(multi_mask["openreview_id"].to_list())
 
-    _cat_ranks: dict[int, dict[str, int]] = {}
+    cat_ranks: dict[int, dict[str, int]] = {}
     for _idx in sorted(CATEGORIES.keys()):
         _sub = CATEGORIES[_idx]["df"].sort("score_top_overall", descending=True)
-        for _rank, _oid in enumerate(_sub["openreview_id"].to_list(), 1):
-            if _oid in _multi_ids:
-                _cat_ranks.setdefault(_idx, {})[_oid] = _rank
+        for rank, _oid in enumerate(_sub["openreview_id"].to_list(), 1):
+            if _oid in multi_ids:
+                cat_ranks.setdefault(_idx, {})[_oid] = rank
 
-    _multi_rows = []
-    for _row in df.filter(pl.col("openreview_id").is_in(list(_multi_ids))).iter_rows(
+    multi_rows = []
+    for _row in df.filter(pl.col("openreview_id").is_in(list(multi_ids))).iter_rows(
         named=True
     ):
         _oid = _row["openreview_id"]
-        _n_cats = (
-            _multi_mask.filter(pl.col("openreview_id") == _oid)
+        n_cats = (
+            multi_mask.filter(pl.col("openreview_id") == _oid)
             .select("n_categories")
             .item()
         )
-        _cats_in = []
-        _rinfo: dict[str, int | None] = {}
+        cats_in = []
+        rinfo: dict[str, int | None] = {}
         for _idx in sorted(CATEGORIES.keys()):
-            _is_in = (
-                _multi_mask.filter(pl.col("openreview_id") == _oid)
+            is_in = (
+                multi_mask.filter(pl.col("openreview_id") == _oid)
                 .select(f"in_cat_{_idx}")
                 .item()
             )
-            if _is_in:
-                _cats_in.append(CAT_NAMES[_idx])
-                _rinfo[f"rank_{CAT_NAMES[_idx]}"] = _cat_ranks.get(_idx, {}).get(_oid)
-        _multi_rows.append(
+            if is_in:
+                cats_in.append(CAT_NAMES[_idx])
+                rinfo[f"rank_{CAT_NAMES[_idx]}"] = cat_ranks.get(_idx, {}).get(_oid)
+        multi_rows.append(
             {
                 "title": _row["title"][:70],
                 "rating": _row["rating_mean"],
                 "status": _row["status"],
-                "n_cats": _n_cats,
-                "categories": ", ".join(_cats_in),
-                **_rinfo,
+                "n_cats": n_cats,
+                "categories": ", ".join(cats_in),
+                **rinfo,
             }
         )
 
-    multi_cat_df = pl.DataFrame(_multi_rows).sort("n_cats", descending=True)
+    multi_cat_df = pl.DataFrame(multi_rows).sort("n_cats", descending=True)
     print(f"\nPapers in 2+ categories: {multi_cat_df.shape[0]}")
     multi_cat_df.head(30)
     return (multi_cat_df,)
@@ -1997,33 +1993,33 @@ def _():
 
 @app.cell
 def _(CATEGORIES, CAT_NAMES, df):
-    _id_to_cats: dict[str, list[int]] = {}
+    id_to_cats: dict[str, list[int]] = {}
     for _idx in sorted(CATEGORIES.keys()):
         for _oid in CATEGORIES[_idx]["df"]["openreview_id"].to_list():
-            _id_to_cats.setdefault(_oid, []).append(_idx)
+            id_to_cats.setdefault(_oid, []).append(_idx)
 
-    _labels = []
-    _details = []
+    labels = []
+    details = []
     for _oid in df["openreview_id"].to_list():
-        _cats = _id_to_cats.get(_oid, [])
+        _cats = id_to_cats.get(_oid, [])
         if len(_cats) == 0:
-            _labels.append("Other")
-            _details.append("")
+            labels.append("Other")
+            details.append("")
         elif len(_cats) == 1:
-            _labels.append(CAT_NAMES[_cats[0]])
-            _details.append(CAT_NAMES[_cats[0]])
+            labels.append(CAT_NAMES[_cats[0]])
+            details.append(CAT_NAMES[_cats[0]])
         else:
-            _labels.append("Multi-category")
-            _details.append(", ".join(CAT_NAMES[_c] for _c in _cats))
+            labels.append("Multi-category")
+            details.append(", ".join(CAT_NAMES[_c] for _c in _cats))
 
-    _umap_df = df.select(
+    umap_df = df.select(
         "umap_x", "umap_y", "title", "rating_mean", "status"
     ).with_columns(
-        pl.Series("cat_label", _labels),
-        pl.Series("categories", _details),
+        pl.Series("cat_label", labels),
+        pl.Series("categories", details),
     )
 
-    _color_map = {
+    color_map = {
         "Agents": "#e74c3c",
         "RL": "#3498db",
         "Inference": "#2ecc71",
@@ -2035,7 +2031,7 @@ def _(CATEGORIES, CAT_NAMES, df):
         "Multi-category": "#00bcd4",
         "Other": "#d5d8dc",
     }
-    _cat_order = [
+    cat_order = [
         "Agents",
         "RL",
         "Inference",
@@ -2049,22 +2045,22 @@ def _(CATEGORIES, CAT_NAMES, df):
     ]
 
     fig_umap_cat = px.scatter(
-        _umap_df.to_pandas(),
+        umap_df.to_pandas(),
         x="umap_x",
         y="umap_y",
         color="cat_label",
-        color_discrete_map=_color_map,
-        category_orders={"cat_label": _cat_order},
+        color_discrete_map=color_map,
+        category_orders={"cat_label": cat_order},
         hover_name="title",
         hover_data=["rating_mean", "status", "categories"],
         opacity=0.6,
         title="UMAP: Papers Colored by Selected Category",
     )
-    for _trace in fig_umap_cat.data:
-        if _trace.name == "Other":
-            _trace.marker.opacity = 0.35
-            _trace.marker.size = 4
-            _trace.marker.color = "#bdc3c7"
+    for trace in fig_umap_cat.data:
+        if trace.name == "Other":
+            trace.marker.opacity = 0.35
+            trace.marker.size = 4
+            trace.marker.color = "#bdc3c7"
     fig_umap_cat.update_layout(height=700, width=1100)
     fig_umap_cat.write_html(str(FIGURES / "umap_by_category.html"))
     fig_umap_cat
@@ -2087,18 +2083,18 @@ def _():
 
 @app.cell
 def _(CATEGORIES, CAT_NAMES, df, format_paper_cat, membership):
-    _multi_ids_br = set(
+    multi_ids_br = set(
         membership.filter(pl.col("n_categories") >= 2)["openreview_id"].to_list()
     )
     bridge_df = df.filter(
-        pl.col("openreview_id").is_in(list(_multi_ids_br))
+        pl.col("openreview_id").is_in(list(multi_ids_br))
         & pl.col("bridge_ratio").is_not_null()
     ).sort("bridge_ratio")
 
-    _id_cats_br: dict[str, list[int]] = {}
+    id_cats_br: dict[str, list[int]] = {}
     for _idx in sorted(CATEGORIES.keys()):
         for _oid in CATEGORIES[_idx]["df"]["openreview_id"].to_list():
-            _id_cats_br.setdefault(_oid, []).append(_idx)
+            id_cats_br.setdefault(_oid, []).append(_idx)
 
     print(f"Papers in 2+ categories with bridge_ratio: {bridge_df.shape[0]}")
     print(
@@ -2106,23 +2102,23 @@ def _(CATEGORIES, CAT_NAMES, df, format_paper_cat, membership):
     )
     for _i, _row in enumerate(bridge_df.head(15).iter_rows(named=True), 1):
         _oid = _row["openreview_id"]
-        _cats = ", ".join(CAT_NAMES[_c] for _c in _id_cats_br.get(_oid, []))
-        _br = _row["bridge_ratio"]
+        _cats = ", ".join(CAT_NAMES[_c] for _c in id_cats_br.get(_oid, []))
+        br = _row["bridge_ratio"]
         print(
-            f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={_br:.3f}, cats=[{_cats}]')}"
+            f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={br:.3f}, cats=[{_cats}]')}"
         )
     return (bridge_df,)
 
 
 @app.cell
 def _(df, membership):
-    _bridge_plot = df.join(
+    bridge_plot = df.join(
         membership.select("openreview_id", "n_categories"),
         on="openreview_id",
     ).filter(pl.col("n_categories") >= 1)
 
     fig_bridge = px.scatter(
-        _bridge_plot.to_pandas(),
+        bridge_plot.to_pandas(),
         x="bridge_ratio",
         y="n_categories",
         color="rating_mean",
@@ -2161,19 +2157,19 @@ def _():
 
 @app.cell
 def _(CATEGORIES, all_category_picks, membership):
-    _total = sum(len(_v) for _v in all_category_picks.values())
-    _unique_ids = set()
+    total = sum(len(_v) for _v in all_category_picks.values())
+    unique_ids = set()
     for _pl in all_category_picks.values():
         for _p in _pl:
-            _unique_ids.add(_p["openreview_id"])
-    _in_any = membership.filter(pl.col("n_categories") >= 1).shape[0]
-    _in_multi = membership.filter(pl.col("n_categories") >= 2).shape[0]
+            unique_ids.add(_p["openreview_id"])
+    in_any = membership.filter(pl.col("n_categories") >= 1).shape[0]
+    in_multi = membership.filter(pl.col("n_categories") >= 2).shape[0]
 
     print(f"Categories: {len(CATEGORIES)}")
-    print(f"Papers in at least 1 category: {_in_any}")
-    print(f"Papers in 2+ categories: {_in_multi}")
-    print(f"Total per-category picks: {_total}")
-    print(f"Unique picks across all categories: {len(_unique_ids)}")
+    print(f"Papers in at least 1 category: {in_any}")
+    print(f"Papers in 2+ categories: {in_multi}")
+    print(f"Total per-category picks: {total}")
+    print(f"Unique picks across all categories: {len(unique_ids)}")
     print(f"Figures saved to: {FIGURES}/")
     return
 
