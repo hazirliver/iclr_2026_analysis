@@ -1272,11 +1272,11 @@ def _(df_all):
     print(
         f"Remaining for analysis: {df.shape[0]} papers ({df.shape[0] / df_all.shape[0] * 100:.1f}%)"
     )
-    return (BENCH_AREA, df, df_bench)
+    return df, df_bench
 
 
 @app.cell
-def _(BENCH_AREA, df_all, df_bench, kw_1, kw_2, kw_3, kw_4, kw_5, kw_6, kw_7, kw_8):
+def _(df_all, df_bench, kw_1, kw_2, kw_3, kw_4, kw_5, kw_6, kw_7, kw_8):
     # How many benchmark papers fall into each of our 8 categories?
     bench_kw_lists = {
         "Agents": kw_1,
@@ -1337,7 +1337,7 @@ def _(bench_overview):
     fig_bench.update_layout(height=400)
     fig_bench.write_html(str(FIGURES / "benchmark_share.html"))
     fig_bench
-    return (fig_bench,)
+    return
 
 
 @app.cell
@@ -1494,7 +1494,7 @@ def _(
         n_papers = CATEGORIES[_idx]["df"].shape[0]  # ty: ignore[unresolved-attribute]
         n_kw = len(CATEGORIES[_idx]["kw"])  # ty: ignore[unresolved-attribute]
         print(f"  Cat {_idx} ({short:>10s}): {n_papers:4d} papers, {n_kw:3d} keywords")
-    return (CATEGORIES, CAT_NAMES)
+    return CATEGORIES, CAT_NAMES
 
 
 @app.cell
@@ -1582,7 +1582,7 @@ def _():
             f"    -> {reason}"
         )
 
-    return (compute_local_scores, diversified_top_n_cat, format_paper_cat)
+    return compute_local_scores, diversified_top_n_cat, format_paper_cat
 
 
 @app.cell(hide_code=True)
@@ -1652,7 +1652,7 @@ def _(overview_df):
     fig_overview.update_layout(height=400, yaxis={"categoryorder": "total ascending"})
     fig_overview.write_html(str(FIGURES / "category_overview.html"))
     fig_overview
-    return (fig_overview,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -1669,7 +1669,12 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, compute_local_scores, diversified_top_n_cat, format_paper_cat):
+def _(
+    CATEGORIES,
+    compute_local_scores,
+    diversified_top_n_cat,
+    format_paper_cat,
+):
     all_category_picks: dict[int, list[dict]] = {}
 
     for _idx, _cat in CATEGORIES.items():
@@ -1807,7 +1812,7 @@ def _(CATEGORIES, df):
     )
     fig_heatmap.write_html(str(FIGURES / "category_archetype_heatmap.html"))
     fig_heatmap
-    return (fig_heatmap,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -1846,11 +1851,11 @@ def _(CATEGORIES, df):
     print(
         f"Papers in 3+ categories: {membership.filter(pl.col('n_categories') >= 3).shape[0]}"
     )
-    return (membership, cat_col_names)
+    return cat_col_names, membership
 
 
 @app.cell
-def _(CAT_NAMES, CATEGORIES, cat_col_names, membership):
+def _(CATEGORIES, CAT_NAMES, cat_col_names, membership):
     grouped = (
         membership.group_by(cat_col_names)
         .agg(pl.len().alias("count"))
@@ -1892,11 +1897,17 @@ def _(CAT_NAMES, CATEGORIES, cat_col_names, membership):
     )
     for _lbl, cnt, _s in multi:
         print(f"  {cnt:5d}  ({len(_s)} cats)  {_lbl}")
-    return (combo_labels, combo_counts, combo_sets)
+    return combo_counts, combo_labels, combo_sets
 
 
 @app.cell
-def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
+def _(
+    CATEGORIES,
+    CAT_NAMES,
+    combo_counts: list[int],
+    combo_labels: list[str],
+    combo_sets: list[set[int]],
+):
     # Sort: multi-category first (by n_cats desc, then count desc), then singles by count desc
     combos = list(zip(combo_labels, combo_counts, combo_sets, range(len(combo_sets))))
     combos = [(lbl, _c, _s, _i) for lbl, _c, _s, _i in combos if len(_s) > 0]
@@ -2014,7 +2025,7 @@ def _(CAT_NAMES, CATEGORIES, combo_counts, combo_labels, combo_sets):
     )
     fig_upset.write_html(str(FIGURES / "category_upset.html"))
     fig_upset
-    return (fig_upset,)
+    return
 
 
 @app.cell
@@ -2064,7 +2075,7 @@ def _(CATEGORIES, CAT_NAMES, df, membership):
     multi_cat_df = pl.DataFrame(multi_rows).sort("n_cats", descending=True)
     print(f"\nPapers in 2+ categories: {multi_cat_df.shape[0]}")
     multi_cat_df.head(30)
-    return (multi_cat_df,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -2155,7 +2166,7 @@ def _(CATEGORIES, CAT_NAMES, df_all):
     fig_umap_cat.update_layout(height=700, width=1100)
     fig_umap_cat.write_html(str(FIGURES / "umap_by_category.html"))
     fig_umap_cat
-    return (fig_umap_cat,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -2198,7 +2209,7 @@ def _(CATEGORIES, CAT_NAMES, df, format_paper_cat, membership):
         print(
             f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={br:.3f}, cats=[{_cats}]')}"
         )
-    return (bridge_df,)
+    return
 
 
 @app.cell
@@ -2227,7 +2238,7 @@ def _(df, membership):
     )
     fig_bridge.write_html(str(FIGURES / "bridge_vs_categories.html"))
     fig_bridge
-    return (fig_bridge,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -2247,7 +2258,7 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, all_category_picks, membership):
+def _(CATEGORIES, all_category_picks: dict[int, list[dict]], membership):
     total = sum(len(_v) for _v in all_category_picks.values())
     unique_ids = set()
     for _pl in all_category_picks.values():
@@ -2262,6 +2273,16 @@ def _(CATEGORIES, all_category_picks, membership):
     print(f"Total per-category picks: {total}")
     print(f"Unique picks across all categories: {len(unique_ids)}")
     print(f"Figures saved to: {FIGURES}/")
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _():
     return
 
 

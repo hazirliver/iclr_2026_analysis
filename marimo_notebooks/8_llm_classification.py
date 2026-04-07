@@ -59,9 +59,6 @@ def _():
     return
 
 
-# ── load & join ─────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
@@ -81,9 +78,6 @@ def _():
     df = papers.join(clf, on="openreview_id", how="left")
     print(f"Joined: {df.shape[0]} rows, {df.shape[1]} columns")
     return (df,)
-
-
-# ── validation ──────────────────────────────────────────
 
 
 @app.cell(hide_code=True)
@@ -110,9 +104,6 @@ def _(df):
         )
     )
     return
-
-
-# ── category distribution ──────────────────────────────
 
 
 @app.cell(hide_code=True)
@@ -156,9 +147,6 @@ def _(cat_counts):
     return
 
 
-# ── confidence distribution ─────────────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
@@ -196,9 +184,6 @@ def _(df):
     fig_conf.update_layout(xaxis_tickangle=-30)
     fig_conf
     return
-
-
-# ── cross-tab: LLM category vs primary_area ─────────────
 
 
 @app.cell(hide_code=True)
@@ -251,9 +236,6 @@ def _(cross):
     return
 
 
-# ── per-category examples ───────────────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
@@ -274,9 +256,6 @@ def _(df):
     return
 
 
-# ── save ────────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
@@ -289,6 +268,11 @@ def _():
 def _(df):
     df.write_parquet(OUTPUT_FILE)
     print(f"Saved {df.shape[0]} rows to {OUTPUT_FILE}")
+    return
+
+
+@app.cell
+def _():
     return
 
 
