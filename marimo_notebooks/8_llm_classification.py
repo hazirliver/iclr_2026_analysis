@@ -91,16 +91,16 @@ def _():
 @app.cell
 def _(df):
     n_total = df.shape[0]
-    n_classified = df.filter(pl.col("llm_category").is_not_null()).shape[0]
-    n_unclassified = df.filter(
-        (pl.col("llm_category").is_null()) | (pl.col("llm_category") == "UNCLASSIFIED")
-    ).shape[0]
+    n_failed = df.filter(pl.col("llm_category") == "UNCLASSIFIED").shape[0]
+    n_missing = df.filter(pl.col("llm_category").is_null()).shape[0]
+    n_classified = n_total - n_failed - n_missing
 
     mo.output.append(
         mo.md(
-            f"**Coverage:** {n_classified}/{n_total} papers classified "
+            f"**Classified:** {n_classified}/{n_total} "
             f"({n_classified / n_total:.1%})\n\n"
-            f"**Unclassified / failed:** {n_unclassified}"
+            f"**Failed (UNCLASSIFIED):** {n_failed}\n\n"
+            f"**Missing (no result):** {n_missing}"
         )
     )
     return
