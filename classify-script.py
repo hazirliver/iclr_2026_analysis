@@ -45,6 +45,7 @@ CATEGORIES = [
     "AI for Life Sciences",
     "Robotics",
     "Media",
+    "Other",
 ]
 
 CLASSIFICATION_SCHEMA = {
@@ -81,6 +82,7 @@ Categories:
 6. AI for Life Sciences — biology, medicine, drug discovery, genomics, healthcare applications, molecular modeling, protein folding, scientific simulation
 7. Robotics — physical robots, control systems, embodied AI, manipulation, navigation in the real world, autonomous driving
 8. Media — generation or processing of text, images, video, audio, music, games, 3D, diffusion models, multimodal generation
+9. Other — papers that do not clearly fit any of the above categories (e.g., pure theory, optimization, graph learning, representation learning, time series, probabilistic methods, causal reasoning)
 
 Rules:
 - Assign exactly ONE category.
@@ -89,7 +91,8 @@ Rules:
 - If a paper applies a method to a domain (e.g., RL for robotics), classify based on the MAIN contribution:
   - If the novelty is in RL → RL
   - If the novelty is in robotics → Robotics
-- If uncertain, choose the closest match based on the central problem being solved.
+- Use "Other" only when the paper genuinely does not fit any of the 8 specific categories.
+- If uncertain between a specific category and "Other", prefer the specific category.
 """
 
 
