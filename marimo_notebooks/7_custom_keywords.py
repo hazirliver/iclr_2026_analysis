@@ -1242,9 +1242,102 @@ def _():
 
 @app.cell
 def _():
-    df = pl.read_parquet("iclr_2026_scored.parquet")
-    print(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns")
-    return (df,)
+    df_all = pl.read_parquet("iclr_2026_scored.parquet")
+    print(f"Loaded {df_all.shape[0]} rows × {df_all.shape[1]} columns")
+    return (df_all,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## 2.1 Datasets & Benchmarks split
+
+    Before diving into thematic categories, we separate out papers whose
+    `primary_area` is "datasets and benchmarks". These are important contributions
+    but have a different evaluation profile — they are judged on data quality and
+    coverage rather than methodological novelty. We analyze their distribution
+    across categories and then exclude them from the main analysis.
+    """)
+    return
+
+
+@app.cell
+def _(df_all):
+    BENCH_AREA = "datasets and benchmarks"
+    df_bench = df_all.filter(pl.col("primary_area") == BENCH_AREA)
+    df = df_all.filter(pl.col("primary_area") != BENCH_AREA)
+    print(
+        f"Datasets & Benchmarks: {df_bench.shape[0]} papers ({df_bench.shape[0] / df_all.shape[0] * 100:.1f}%)"
+    )
+    print(
+        f"Remaining for analysis: {df.shape[0]} papers ({df.shape[0] / df_all.shape[0] * 100:.1f}%)"
+    )
+    return (BENCH_AREA, df, df_bench)
+
+
+@app.cell
+def _(BENCH_AREA, df_all, df_bench, kw_1, kw_2, kw_3, kw_4, kw_5, kw_6, kw_7, kw_8):
+    # How many benchmark papers fall into each of our 8 categories?
+    bench_kw_lists = {
+        "Agents": kw_1,
+        "RL": kw_2,
+        "Inference": kw_3,
+        "Infra": kw_4,
+        "Safety": kw_5,
+        "Science": kw_6,
+        "Robotics": kw_7,
+        "Media": kw_8,
+    }
+    bench_rows = []
+    for name, kws in bench_kw_lists.items():
+        in_cat_all = df_all.filter(
+            pl.col("keywords")
+            .list.eval(pl.element().str.to_lowercase().is_in(kws))
+            .list.any()
+        ).shape[0]
+        in_cat_bench = df_bench.filter(
+            pl.col("keywords")
+            .list.eval(pl.element().str.to_lowercase().is_in(kws))
+            .list.any()
+        ).shape[0]
+        bench_rows.append(
+            {
+                "category": name,
+                "total_in_cat": in_cat_all,
+                "bench_in_cat": in_cat_bench,
+                "bench_pct": round(in_cat_bench / max(in_cat_all, 1) * 100, 1),
+            }
+        )
+
+    bench_overview = pl.DataFrame(bench_rows)
+    overall_bench_pct = round(df_bench.shape[0] / df_all.shape[0] * 100, 1)
+    print(f"Overall benchmark proportion: {overall_bench_pct}%\n")
+    print("Benchmark share per category:")
+    bench_overview
+    return (bench_overview,)
+
+
+@app.cell
+def _(bench_overview):
+    fig_bench = px.bar(
+        bench_overview.to_pandas(),
+        x="category",
+        y="bench_pct",
+        text="bench_in_cat",
+        title="Share of 'Datasets & Benchmarks' papers in each category",
+        labels={"bench_pct": "% that are benchmarks", "category": "Category"},
+    )
+    fig_bench.add_hline(
+        y=8.3,
+        line_dash="dash",
+        line_color="red",
+        annotation_text="overall avg (8.3%)",
+        annotation_position="top right",
+    )
+    fig_bench.update_layout(height=400)
+    fig_bench.write_html(str(FIGURES / "benchmark_share.html"))
+    fig_bench
+    return (fig_bench,)
 
 
 @app.cell
@@ -1256,10 +1349,11 @@ def _(df):
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    ## 2.1 Filter by keywords
+    ## 2.2 Filter by keywords
 
-    Each paper is matched against the 8 keyword lists above. A paper can belong
-    to multiple categories (e.g. an "RL agent" paper matches both Agents and RL).
+    Each paper (excluding benchmarks) is matched against the 8 keyword lists
+    above. A paper can belong to multiple categories (e.g. an "RL agent" paper
+    matches both Agents and RL).
     """)
     return
 
@@ -1721,13 +1815,10 @@ def _():
     mo.md(r"""
     # 7. Category Intersections (UpSet-style)
 
-    Our 8 categories cover 2,516 of 5,358 papers (47%). Of these, 414 belong to
-    2+ categories, and 28 span 3 or more. The dominant overlap is Agents & RL
-    (76 papers) — natural since agents typically rely on RL for training. Two
-    papers even span 4 categories.
-
-    The UpSet plot below shows multi-category intersections on the left (sorted
-    by intersection degree), with single-category sizes on the right for context.
+    Papers can belong to multiple categories simultaneously. The UpSet plot below
+    shows multi-category intersections on the left (sorted by intersection
+    degree), with single-category sizes on the right for context. Agents & RL is
+    typically the dominant overlap — natural since agents rely on RL for training.
     """)
     return
 
@@ -1992,7 +2083,7 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, CAT_NAMES, df):
+def _(CATEGORIES, CAT_NAMES, df_all):
     id_to_cats: dict[str, list[int]] = {}
     for _idx in sorted(CATEGORIES.keys()):
         for _oid in CATEGORIES[_idx]["df"]["openreview_id"].to_list():
@@ -2000,7 +2091,7 @@ def _(CATEGORIES, CAT_NAMES, df):
 
     labels = []
     details = []
-    for _oid in df["openreview_id"].to_list():
+    for _oid in df_all["openreview_id"].to_list():
         _cats = id_to_cats.get(_oid, [])
         if len(_cats) == 0:
             labels.append("Other")
@@ -2012,7 +2103,7 @@ def _(CATEGORIES, CAT_NAMES, df):
             labels.append("Multi-category")
             details.append(", ".join(CAT_NAMES[_c] for _c in _cats))
 
-    umap_df = df.select(
+    umap_df = df_all.select(
         "umap_x", "umap_y", "title", "rating_mean", "status"
     ).with_columns(
         pl.Series("cat_label", labels),
@@ -2144,12 +2235,12 @@ def _():
     mo.md(r"""
     # 10. Summary
 
-    Our 8 categories carve out distinct slices of ICLR 2026, each with its own
-    "personality": Science papers push into novel semantic territory but divide
-    reviewers; Safety work sparks the most debate; Media and Robotics enjoy
-    strong reviewer consensus and high quality; and Agents serve as the
-    conference's connective tissue, bridging the most clusters. The 414
-    multi-category papers — especially the handful spanning 3-4 categories —
+    After separating out benchmark papers, our 8 categories carve distinct slices
+    of ICLR 2026, each with its own "personality": Science papers push into novel
+    semantic territory but divide reviewers; Safety work sparks the most debate;
+    Media and Robotics enjoy strong reviewer consensus and high quality; and
+    Agents serve as the conference's connective tissue, bridging the most
+    clusters. Multi-category papers — especially those spanning 3-4 categories —
     represent the most interdisciplinary work at the conference.
     """)
     return
