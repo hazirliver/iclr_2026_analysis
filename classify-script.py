@@ -93,6 +93,7 @@ Rules:
   - If the novelty is in robotics → Robotics
 - Use "Other" only when the paper genuinely does not fit any of the 8 specific categories.
 - If uncertain between a specific category and "Other", prefer the specific category.
+- Keep reasoning to 1-2 sentences maximum. Do NOT repeat the title or abstract.
 """
 
 
@@ -172,9 +173,11 @@ if __name__ == "__main__":
     else:
         new_results = asyncio.run(classify_all(remaining))
 
-        # merge with previously done results
+        # merge with previously done results (ensure matching column order)
+        col_order = ["openreview_id", "llm_category", "llm_confidence", "llm_reasoning"]
+        new_results = new_results.select(col_order)
         if done is not None:
-            all_results = pl.concat([done, new_results])
+            all_results = pl.concat([done.select(col_order), new_results])
         else:
             all_results = new_results
 
