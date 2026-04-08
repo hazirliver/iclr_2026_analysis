@@ -114,8 +114,12 @@ async def classify_paper(openreview_id: str, title: str, abstract: str) -> dict:
                     temperature=0.0,
                     max_tokens=1024,
                 )
-            content = resp.choices[0].message.content or "{}"
+            content = resp.choices[0].message.content or ""
+            if not content.strip():
+                raise ValueError("Empty response from model")
             result = json.loads(content)
+            if "category" not in result or result["category"] not in CATEGORIES:
+                raise ValueError(f"Invalid category in response: {content[:200]}")
             result["openreview_id"] = openreview_id
             return result
         except Exception as e:
@@ -152,16 +156,19 @@ if __name__ == "__main__":
     df = pl.read_parquet(INPUT_FILE)
     print(f"Loaded {len(df)} papers from {INPUT_FILE}")
 
-    # resume: skip already-classified papers, retry UNCLASSIFIED
+    # resume: skip already-classified papers, retry UNCLASSIFIED/null
     try:
         prev = pl.read_parquet(OUTPUT_FILE)
-        done = prev.filter(pl.col("llm_category") != "UNCLASSIFIED")
-        failed = prev.filter(pl.col("llm_category") == "UNCLASSIFIED")
+        done = prev.filter(
+            pl.col("llm_category").is_not_null()
+            & pl.col("llm_category").is_in(CATEGORIES)
+        )
+        n_failed = prev.shape[0] - done.shape[0]
         done_ids = set(done["openreview_id"].to_list())
         remaining = df.filter(~pl.col("openreview_id").is_in(done_ids))
         print(
             f"Already classified: {len(done_ids)}, "
-            f"previously failed (will retry): {failed.shape[0]}, "
+            f"previously failed (will retry): {n_failed}, "
             f"remaining: {len(remaining)}"
         )
     except FileNotFoundError:
