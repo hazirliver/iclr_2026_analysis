@@ -20,12 +20,12 @@ def _():
     mo.md(r"""
     # 8. LLM-based Paper Classification
 
-    Semantic classification of ICLR 2026 papers into 8 thematic categories
-    using **Kimi-K2.5** served via vLLM. Each paper is classified based on
-    its title and abstract via a structured-output chat completion.
+    Semantic classification of ICLR 2026 papers into 6 focused categories
+    via LLM served by vLLM. Each paper is classified based on its title and
+    abstract via a structured-output chat completion.
 
-    Categories: AI Agents, RL, Inference Optimisation, Infrastructure,
-    AI Safety/Ethics, AI for Life Sciences, Robotics, Media.
+    Categories: SWE Agents, RL, Inference Optimisation, Infrastructure,
+    AI for Life Sciences, Robotics (+ Other).
     """)
     return
 

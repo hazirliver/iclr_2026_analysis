@@ -37,14 +37,12 @@ sem = asyncio.Semaphore(MAX_CONCURRENT)
 
 # ── categories & schema ─────────────────────────────────
 CATEGORIES = [
-    "AI Agents",
+    "SWE Agents",
     "RL",
     "Inference Optimisation",
     "Infrastructure",
-    "AI Safety, Ethics and Societal Impact",
     "AI for Life Sciences",
     "Robotics",
-    "Media",
     "Other",
 ]
 
@@ -74,15 +72,13 @@ Your task is to assign exactly ONE dominant category to a scientific paper based
 You must choose the single most relevant category from the predefined list below. Even if multiple categories seem relevant, you must select the one that best represents the primary contribution or focus of the paper.
 
 Categories:
-1. AI Agents — autonomous systems, multi-agent systems, planning agents, tool-using agents, LLM agents, SWE agents
-2. RL — reinforcement learning, policy optimization, reward modeling, environments, decision-making via RL, RLHF, DPO, post-training alignment
-3. Inference Optimisation — model efficiency, inference speed, quantization, pruning, distillation, serving optimization, speculative decoding, long-context scaling, KV-cache, token prediction
-4. Infrastructure — systems, distributed training, data pipelines, hardware/software stacks, ML platforms, compilers, scheduling
-5. AI Safety, Ethics and Societal Impact — alignment, fairness, bias, interpretability, governance, risks, red-teaming, watermarking, privacy
-6. AI for Life Sciences — biology, medicine, drug discovery, genomics, healthcare applications, molecular modeling, protein folding, scientific simulation
-7. Robotics — physical robots, control systems, embodied AI, manipulation, navigation in the real world, autonomous driving
-8. Media — generation or processing of text, images, video, audio, music, games, 3D, diffusion models, multimodal generation
-9. Other — papers that do not clearly fit any of the above categories (e.g., pure theory, optimization, graph learning, representation learning, time series, probabilistic methods, causal reasoning)
+1. SWE Agents — coding agents, agentic coding, software engineering agents, SWE-agent, repository-level code generation, research agents that write or debug code
+2. RL — reinforcement learning for language models (RLVR, GRPO, self-play optimization), process reward models, reward hacking, test-time RL, multi-agent RL, sample-efficient RL, advantage estimation
+3. Inference Optimisation — test-time compute scaling, chain-of-thought reasoning, inference-time adaptation/algorithms, compute budget allocation, best-of-N, scaling test-time compute, visual/multimodal CoT
+4. Infrastructure — distributed training, GPU/CUDA/Triton kernels, memory-efficient training, gradient checkpointing/compression, sequence parallelism, federated learning, continual pretraining, batch size scheduling, hardware acceleration, ML platforms
+5. AI for Life Sciences — biology, medicine, drug discovery, genomics, healthcare applications, molecular modeling, protein folding, scientific simulation, materials science
+6. Robotics — physical robots, control systems, embodied AI, manipulation, navigation in the real world, autonomous driving, sim-to-real transfer
+7. Other — papers that do not clearly fit any of the above 6 specific categories (e.g., safety, fairness, media generation, pure theory, optimization, graph learning, representation learning, diffusion models, multimodal generation)
 
 Rules:
 - Assign exactly ONE category.
@@ -91,7 +87,7 @@ Rules:
 - If a paper applies a method to a domain (e.g., RL for robotics), classify based on the MAIN contribution:
   - If the novelty is in RL → RL
   - If the novelty is in robotics → Robotics
-- Use "Other" only when the paper genuinely does not fit any of the 8 specific categories.
+- Use "Other" only when the paper genuinely does not fit any of the 6 specific categories.
 - If uncertain between a specific category and "Other", prefer the specific category.
 - Keep reasoning to 1-2 sentences maximum. Do NOT repeat the title or abstract.
 - Reply strictly adhering to the JSON strict schema:
@@ -107,14 +103,12 @@ Rules:
         "category": {
           "type": "string",
           "enum": [
-            "AI Agents",
+            "SWE Agents",
             "RL",
             "Inference Optimisation",
             "Infrastructure",
-            "AI Safety, Ethics and Societal Impact",
             "AI for Life Sciences",
             "Robotics",
-            "Media",
             "Other"
           ]
         },
@@ -132,15 +126,24 @@ Rules:
   }
 }
     ```
-- Example of output:
-    ```json
-    {
-  "category": "AI Agents",
-  "confidence": "high",
-  "reasoning": "The paper focuses on autonomous agent behavior, task planning, and tool use, so it best fits the AI Agents category."
-}
-    ```
 """
+
+# One-shot example: agent paper that should NOT be classified as SWE Agents
+# (the domain is cybersecurity, not software engineering)
+ONESHOT_USER = """\
+Title: Comparing AI Agents to Cybersecurity Professionals in Real-World Penetration Testing
+
+Abstract: We present the first comprehensive evaluation of AI agents against human \
+cybersecurity professionals in a live enterprise environment. We evaluate ten \
+cybersecurity professionals alongside six existing AI agents and ARTEMIS, our new \
+agent scaffold, on a large university network consisting of 8,000 hosts across 12 \
+subnets. ARTEMIS is a multi-agent framework featuring dynamic prompt generation, \
+arbitrary sub-agents, and automatic vulnerability triaging."""
+
+ONESHOT_ASSISTANT = """\
+{"category": "Other", "confidence": "high", "reasoning": "Despite using an agent \
+framework, the core contribution is benchmarking AI in cybersecurity penetration \
+testing — a security domain, not software engineering."}"""
 
 
 # ── inference ───────────────────────────────────────────
@@ -154,10 +157,14 @@ async def classify_paper(openreview_id: str, title: str, abstract: str) -> dict:
                     model=MODEL,
                     messages=[
                         {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": ONESHOT_USER},
+                        {"role": "assistant", "content": ONESHOT_ASSISTANT},
                         {"role": "user", "content": user_msg},
                     ],
-                    extra_body={"response_format": CLASSIFICATION_SCHEMA,
-                                "chat_template_kwargs": {"enable_thinking": False}},
+                    extra_body={
+                        "response_format": CLASSIFICATION_SCHEMA,
+                        "chat_template_kwargs": {"enable_thinking": False},
+                    },
                     temperature=0.1,
                     max_tokens=12000,
                 )
