@@ -16,23 +16,16 @@ with app.setup:
     FIGURES.mkdir(exist_ok=True)
 
 
-# ── 1. Title ────────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
     # LLM-Based Category Analysis of ICLR 2026
 
-    Replicates the per-category analysis from notebook 7 (keyword-based) but uses
-    the **Kimi-K2.5** LLM classification (`llm_category`). Key difference: each
+    LLM classification (`llm_category`). Key difference: each
     paper has **exactly one** category (no multi-category overlaps), plus an
-    explicit "Other" bucket and ~783 UNCLASSIFIED papers (inference failures).
+    explicit "Other" bucket
     """)
     return
-
-
-# ── 2. Load & benchmark split ───────────────────────────
 
 
 @app.cell(hide_code=True)
@@ -53,11 +46,9 @@ def _():
     BENCH_AREA = "datasets and benchmarks"
     df_bench = df_all.filter(pl.col("primary_area") == BENCH_AREA)
     df = df_all.filter(pl.col("primary_area") != BENCH_AREA)
-    print(
-        f"Benchmark papers: {df_bench.shape[0]} ({df_bench.shape[0] / df_all.shape[0]:.1%})"
-    )
+    print(f"Benchmark papers: {df_bench.shape[0]} ({df_bench.shape[0] / df_all.shape[0]:.1%})")
     print(f"Main analysis set: {df.shape[0]} papers")
-    return (df, df_all, df_bench)
+    return df, df_all
 
 
 @app.cell
@@ -67,17 +58,13 @@ def _(df_all):
         .group_by("llm_category")
         .agg(
             total=pl.len(),
-            bench=(pl.col("primary_area") == "datasets and benchmarks")
-            .sum()
-            .cast(pl.Int64),
+            bench=(pl.col("primary_area") == "datasets and benchmarks").sum().cast(pl.Int64),
         )
         .with_columns(bench_pct=(pl.col("bench") / pl.col("total") * 100).round(1))
         .sort("total", descending=True)
     )
     overall_bench_pct = round(
-        df_all.filter(pl.col("primary_area") == "datasets and benchmarks").shape[0]
-        / df_all.shape[0]
-        * 100,
+        df_all.filter(pl.col("primary_area") == "datasets and benchmarks").shape[0] / df_all.shape[0] * 100,
         1,
     )
 
@@ -100,9 +87,6 @@ def _(df_all):
     fig_bench.write_html(str(FIGURES / "llm_benchmark_share.html"))
     fig_bench
     return
-
-
-# ── 3. Category dict & helper functions ─────────────────
 
 
 @app.cell(hide_code=True)
@@ -145,7 +129,7 @@ def _(df):
 
     CATEGORIES: dict = {}
     for cat_name in sorted(df["llm_category"].unique().drop_nulls().to_list()):
-        if cat_name == "UNCLASSIFIED":
+        if cat_name == "Other":
             continue
         subset = df.filter(pl.col("llm_category") == cat_name)
         short = SHORT_NAMES.get(cat_name, cat_name)
@@ -157,7 +141,7 @@ def _(df):
         short = cat_data["short"]
         n_papers = cat_data["df"].shape[0]
         print(f"  {short:>10s}: {n_papers:4d} papers")
-    return (CATEGORIES, CAT_NAMES, COLOR_MAP, SHORT_NAMES)
+    return CATEGORIES, COLOR_MAP, SHORT_NAMES
 
 
 @app.cell
@@ -165,6 +149,7 @@ def _():
     def _z(col: pl.Expr) -> pl.Expr:
         """Standardize a column to zero mean, unit variance."""
         return (col - col.mean()) / col.std()
+
 
     def compute_local_scores(subset: pl.DataFrame) -> pl.DataFrame:
         """Recompute 4 archetype scores using category-LOCAL z-scores."""
@@ -177,11 +162,11 @@ def _():
             )
         return subset.with_columns(
             (
-                _z(pl.col("rating_mean")) * 0.35
-                + _z(pl.col("soundness_mean")) * 0.25
-                + _z(pl.col("contribution_mean")) * 0.25
-                - _z(pl.col("rating_std")) * 0.10
-                + _z(pl.col("confidence_mean")) * 0.05
+                _z(pl.col("contribution_mean")) * 0.40
+                + _z(pl.col("rating_mean")) * 0.35
+                + _z(pl.col("confidence_mean")) * 0.10
+                + _z(pl.col("soundness_mean")) * 0.10
+                - _z(pl.col("rating_std")) * 0.05
             )
             .fill_nan(0.0)
             .alias("local_top_overall"),
@@ -203,14 +188,11 @@ def _():
             )
             .fill_nan(0.0)
             .alias("local_controversial"),
-            (
-                _z(pl.col("rating_mean")) * 0.40
-                - _z(pl.col("rating_std")) * 0.30
-                + _z(pl.col("confidence_mean")) * 0.30
-            )
+            (_z(pl.col("rating_mean")) * 0.40 - _z(pl.col("rating_std")) * 0.30 + _z(pl.col("confidence_mean")) * 0.30)
             .fill_nan(0.0)
             .alias("local_consensus"),
         )
+
 
     def diversified_top_n_cat(
         scored_df: pl.DataFrame,
@@ -233,6 +215,7 @@ def _():
                 cluster_counts[cl] = cluster_counts.get(cl, 0) + 1
         return pl.DataFrame(selected)
 
+
     def format_paper_cat(row: dict, reason: str) -> str:
         """Format a paper for display."""
         conf = row.get("llm_confidence", "?")
@@ -240,16 +223,13 @@ def _():
             f"  [{row['status']:8s}] rating={row['rating_mean']:.1f} "
             f"sound={row['soundness_mean']:.1f} contrib={row['contribution_mean']:.1f}"
             f" cluster={row['cluster_ward']} conf={conf}\n"
-            f"    {row['title'][:90]}\n"
-            f"    area={row['primary_area'][:50]}\n"
+            f"    {row['title']}\n"
+            f"    area={row['primary_area']}\n"
             f"    {row['site']}\n"
             f"    -> {reason}"
         )
 
     return compute_local_scores, diversified_top_n_cat, format_paper_cat
-
-
-# ── 4. Category Overview Dashboard ──────────────────────
 
 
 @app.cell(hide_code=True)
@@ -261,7 +241,7 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES):
+def _(CATEGORIES: dict):
     rows = []
     for _cat_name, _cat in CATEGORIES.items():
         _sub = _cat["df"]
@@ -269,20 +249,10 @@ def _(CATEGORIES):
         if _n == 0:
             continue
         oral_pct = (_sub.filter(pl.col("status") == "Oral").shape[0] / _n) * 100
-        kw_col = (
-            "canonical_keywords" if "canonical_keywords" in _sub.columns else "keywords"
-        )
-        kw_flat = (
-            _sub.select(pl.col(kw_col).explode().str.to_lowercase())
-            .to_series()
-            .drop_nulls()
-        )
-        top_kw = ", ".join(
-            kw_flat.value_counts(sort=True).head(3).get_column(kw_flat.name).to_list()
-        )
-        conf_high_pct = (
-            _sub.filter(pl.col("llm_confidence") == "high").shape[0] / _n * 100
-        )
+        kw_col = "canonical_keywords" if "canonical_keywords" in _sub.columns else "keywords"
+        kw_flat = _sub.select(pl.col(kw_col).explode().str.to_lowercase()).to_series().drop_nulls()
+        top_kw = ", ".join(kw_flat.value_counts(sort=True).head(3).get_column(kw_flat.name).to_list())
+        conf_high_pct = _sub.filter(pl.col("llm_confidence") == "high").shape[0] / _n * 100
         rows.append(
             {
                 "category": _cat["short"],
@@ -326,9 +296,6 @@ def _(overview_df):
     return
 
 
-# ── 5. Per-Category Top 10 Papers ───────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
@@ -344,7 +311,7 @@ def _():
 
 @app.cell
 def _(
-    CATEGORIES,
+    CATEGORIES: dict,
     compute_local_scores,
     diversified_top_n_cat,
     format_paper_cat,
@@ -367,10 +334,10 @@ def _(
         picks: list[dict] = []
 
         budget = [
-            ("local_top_overall", 3, None, "Top overall (local)"),
-            ("local_hidden_gem", 2, "Poster", "Hidden gem (local)"),
-            ("local_controversial", 2, None, "Controversial (local)"),
-            ("local_consensus", 3, None, "Consensus standout (local)"),
+            ("local_top_overall", 8, None, "Top overall (local)"),
+            ("local_hidden_gem", 1, "Poster", "Hidden gem (local)"),
+            ("local_controversial", 1, None, "Controversial (local)"),
+            ("local_consensus", 0, None, "Consensus standout (local)"),
         ]
         for sc, want, sf, label in budget:
             pool = scored if not sf else scored.filter(pl.col("status") == sf)
@@ -409,7 +376,16 @@ def _(
     return (all_category_picks,)
 
 
-# ── 6. Category x Archetype Heatmap ─────────────────────
+@app.cell
+def _(df):
+    df
+    return
+
+
+@app.cell
+def _(df):
+    df.filter(pl.col('site') == "https://openreview.net/forum?id=hPOImB2mZW").select(['llm_confidence', 'llm_reasoning', 'llm_category', 'site'])
+    return
 
 
 @app.cell(hide_code=True)
@@ -425,7 +401,7 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, df):
+def _(CATEGORIES: dict, df):
     arch_cols = [
         "score_top_overall",
         "score_hidden_gem",
@@ -436,9 +412,7 @@ def _(CATEGORIES, df):
         "score_area_leader",
         "score_consensus",
     ]
-    arch_labels = [
-        _c.replace("score_", "").replace("_", " ").title() for _c in arch_cols
-    ]
+    arch_labels = [_c.replace("score_", "").replace("_", " ").title() for _c in arch_cols]
     thresholds = {_c: df[_c].quantile(0.80) for _c in arch_cols}
 
     hm_data: list[list[float]] = []
@@ -471,8 +445,7 @@ def _(CATEGORIES, df):
         )
     )
     fig_heatmap.update_layout(
-        title="Category x Archetype: % of papers in global top-20%<br>"
-        "(20% = baseline; above = over-indexed)",
+        title="Category x Archetype: % of papers in global top-20%<br>(20% = baseline; above = over-indexed)",
         height=500,
         width=900,
         xaxis_title="Archetype",
@@ -482,9 +455,6 @@ def _(CATEGORIES, df):
     fig_heatmap.write_html(str(FIGURES / "llm_category_archetype_heatmap.html"))
     fig_heatmap
     return
-
-
-# ── 7. Confidence Analysis ──────────────────────────────
 
 
 @app.cell(hide_code=True)
@@ -500,18 +470,16 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, COLOR_MAP):
+def _(CATEGORIES: dict, COLOR_MAP):
     conf_rows = []
     for _cat_name, _cat in CATEGORIES.items():
         _sub = _cat["df"]
         for level in ["high", "medium", "low"]:
             cnt = _sub.filter(pl.col("llm_confidence") == level).shape[0]
-            conf_rows.append(
-                {"category": _cat["short"], "confidence": level, "count": cnt}
-            )
+            conf_rows.append({"category": _cat["short"], "confidence": level, "count": cnt})
     conf_by_cat = pl.DataFrame(conf_rows)
 
-    cat_order = sorted(COLOR_MAP.keys())
+    _cat_order = sorted(COLOR_MAP.keys())
     fig_conf = px.bar(
         conf_by_cat.to_pandas(),
         x="category",
@@ -520,7 +488,7 @@ def _(CATEGORIES, COLOR_MAP):
         barmode="stack",
         title="LLM confidence breakdown per category",
         color_discrete_map={"high": "#2ecc71", "medium": "#f39c12", "low": "#e74c3c"},
-        category_orders={"category": cat_order},
+        category_orders={"category": _cat_order},
     )
     fig_conf.update_layout(xaxis_tickangle=-30)
     fig_conf.write_html(str(FIGURES / "llm_confidence_by_category.html"))
@@ -541,10 +509,7 @@ def _():
 @app.cell
 def _(df):
     low_conf = (
-        df.filter(
-            (pl.col("llm_confidence") == "low")
-            & (pl.col("llm_category") != "UNCLASSIFIED")
-        )
+        df.filter((pl.col("llm_confidence") == "low") & (pl.col("llm_category") != "UNCLASSIFIED"))
         .select("title", "llm_category", "llm_reasoning", "rating_mean", "primary_area")
         .sort("rating_mean", descending=True)
     )
@@ -564,10 +529,7 @@ def _():
 @app.cell
 def _(SHORT_NAMES, df):
     cross = (
-        df.filter(
-            (pl.col("llm_category") != "UNCLASSIFIED")
-            & pl.col("llm_category").is_not_null()
-        )
+        df.filter((pl.col("llm_category") != "UNCLASSIFIED") & pl.col("llm_category").is_not_null())
         .with_columns(pl.col("llm_category").replace(SHORT_NAMES).alias("cat_short"))
         .group_by("cat_short", "primary_area")
         .agg(count=pl.len())
@@ -593,9 +555,6 @@ def _(SHORT_NAMES, df):
     fig_cross.write_html(str(FIGURES / "llm_vs_primary_area.html"))
     fig_cross
     return
-
-
-# ── 8. UMAP Colored by LLM Category ─────────────────────
 
 
 @app.cell(hide_code=True)
@@ -626,7 +585,7 @@ def _(COLOR_MAP, SHORT_NAMES, df_all):
         .alias("cat_label")
     )
 
-    cat_order = [
+    _cat_order = [
         "Agents",
         "RL",
         "Inference",
@@ -645,7 +604,7 @@ def _(COLOR_MAP, SHORT_NAMES, df_all):
         y="umap_y",
         color="cat_label",
         color_discrete_map=COLOR_MAP,
-        category_orders={"cat_label": cat_order},
+        category_orders={"cat_label": _cat_order},
         hover_name="title",
         hover_data=["rating_mean", "status", "llm_confidence"],
         opacity=0.6,
@@ -653,16 +612,13 @@ def _(COLOR_MAP, SHORT_NAMES, df_all):
     )
     for trace in fig_umap.data:
         if trace.name in ("Other", "Unclassified"):
-            trace.marker.opacity = 0.35
-            trace.marker.size = 4
-            trace.marker.color = COLOR_MAP.get(trace.name, "#d5d8dc")
+            trace.marker.opacity = 1
+            # trace.marker.size = 4
+            trace.marker.color = COLOR_MAP.get(trace.name, "#a9adb7")
     fig_umap.update_layout(height=700, width=1100)
     fig_umap.write_html(str(FIGURES / "llm_umap_by_category.html"))
     fig_umap
     return
-
-
-# ── 9. Bridge Papers ────────────────────────────────────
 
 
 @app.cell(hide_code=True)
@@ -678,10 +634,8 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, df, format_paper_cat):
-    bridge_threshold = df.filter(pl.col("bridge_ratio").is_not_null())[
-        "bridge_ratio"
-    ].quantile(0.10)
+def _(CATEGORIES: dict, df, format_paper_cat):
+    bridge_threshold = df.filter(pl.col("bridge_ratio").is_not_null())["bridge_ratio"].quantile(0.10)
     bridge_papers = df.filter(
         pl.col("bridge_ratio").is_not_null()
         & (pl.col("bridge_ratio") <= bridge_threshold)
@@ -692,17 +646,10 @@ def _(CATEGORIES, df, format_paper_cat):
         bridge_papers.group_by("llm_category")
         .agg(bridge_count=pl.len())
         .join(
-            pl.DataFrame(
-                [
-                    {"llm_category": k, "total": v["df"].shape[0]}
-                    for k, v in CATEGORIES.items()
-                ]
-            ),
+            pl.DataFrame([{"llm_category": k, "total": v["df"].shape[0]} for k, v in CATEGORIES.items()]),
             on="llm_category",
         )
-        .with_columns(
-            bridge_pct=(pl.col("bridge_count") / pl.col("total") * 100).round(1)
-        )
+        .with_columns(bridge_pct=(pl.col("bridge_count") / pl.col("total") * 100).round(1))
         .sort("bridge_pct", descending=True)
     )
     print("Bridge papers (top 10% bridge_ratio) per category:")
@@ -718,10 +665,9 @@ def _(CATEGORIES, df, format_paper_cat):
 
 @app.cell
 def _(COLOR_MAP, SHORT_NAMES, df):
-    bridge_plot = df.filter(
-        pl.col("bridge_ratio").is_not_null()
-        & (pl.col("llm_category") != "UNCLASSIFIED")
-    ).with_columns(pl.col("llm_category").replace(SHORT_NAMES).alias("cat_short"))
+    bridge_plot = df.filter(pl.col("bridge_ratio").is_not_null() & (pl.col("llm_category") != "UNCLASSIFIED")).with_columns(
+        pl.col("llm_category").replace(SHORT_NAMES).alias("cat_short")
+    )
 
     fig_bridge = px.scatter(
         bridge_plot.to_pandas(),
@@ -745,9 +691,6 @@ def _(COLOR_MAP, SHORT_NAMES, df):
     return
 
 
-# ── 10. Summary ─────────────────────────────────────────
-
-
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
@@ -757,11 +700,8 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES, all_category_picks, df, df_all):
-    n_classified = df.filter(
-        (pl.col("llm_category") != "UNCLASSIFIED")
-        & pl.col("llm_category").is_not_null()
-    ).shape[0]
+def _(CATEGORIES: dict, all_category_picks: dict[str, list[dict]], df, df_all):
+    n_classified = df.filter((pl.col("llm_category") != "UNCLASSIFIED") & pl.col("llm_category").is_not_null()).shape[0]
     n_unclassified = df_all.filter(pl.col("llm_category") == "UNCLASSIFIED").shape[0]
 
     total_picks = sum(len(_v) for _v in all_category_picks.values())

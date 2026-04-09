@@ -25,12 +25,12 @@ from tqdm.asyncio import tqdm
 
 # ── config ──────────────────────────────────────────────
 VLLM_BASE_URL = "http://localhost:8000/v1"
-MODEL = "moonshotai/Kimi-K2.5"
-MAX_CONCURRENT = 128
+MODEL = "Qwen/Qwen3.5-397B-A17B-FP8"
+MAX_CONCURRENT = 16
 MAX_RETRIES = 3
 
 INPUT_FILE = "iclr_2026_accepted.parquet"
-OUTPUT_FILE = "classification_results.parquet"
+OUTPUT_FILE = "classification_results_with_reasoning.parquet"
 
 client = AsyncOpenAI(base_url=VLLM_BASE_URL, api_key="EMPTY")
 sem = asyncio.Semaphore(MAX_CONCURRENT)
@@ -94,6 +94,52 @@ Rules:
 - Use "Other" only when the paper genuinely does not fit any of the 8 specific categories.
 - If uncertain between a specific category and "Other", prefer the specific category.
 - Keep reasoning to 1-2 sentences maximum. Do NOT repeat the title or abstract.
+- Reply strictly adhering to the JSON strict schema:
+    ```
+    {
+  "type": "json_schema",
+  "json_schema": {
+    "name": "paper_classification",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "AI Agents",
+            "RL",
+            "Inference Optimisation",
+            "Infrastructure",
+            "AI Safety, Ethics and Societal Impact",
+            "AI for Life Sciences",
+            "Robotics",
+            "Media",
+            "Other"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "reasoning": {
+          "type": "string"
+        }
+      },
+      "required": ["category", "confidence", "reasoning"],
+      "additionalProperties": false
+    }
+  }
+}
+    ```
+- Example of output:
+    ```json
+    {
+  "category": "AI Agents",
+  "confidence": "high",
+  "reasoning": "The paper focuses on autonomous agent behavior, task planning, and tool use, so it best fits the AI Agents category."
+}
+    ```
 """
 
 
@@ -112,7 +158,7 @@ async def classify_paper(openreview_id: str, title: str, abstract: str) -> dict:
                     ],
                     extra_body={"response_format": CLASSIFICATION_SCHEMA},
                     temperature=0.0,
-                    max_tokens=1024,
+                    max_tokens=8192,
                 )
             content = resp.choices[0].message.content or ""
             if not content.strip():
@@ -124,7 +170,7 @@ async def classify_paper(openreview_id: str, title: str, abstract: str) -> dict:
             return result
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
-                await asyncio.sleep(2**attempt)
+                await asyncio.sleep(1**attempt)
             else:
                 return {
                     "openreview_id": openreview_id,

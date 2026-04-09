@@ -41,213 +41,19 @@ def _():
 def _():
     # List 1 – Agents, SWE & Software Engineering
     kw_1 = [
-        "agent",
-        "agent benchmark",
-        "agent composition",
-        "agent design",
-        "agent discovery",
-        "agent diversity",
-        "agent ensemble learning",
-        "agent evaluation",
-        "agent framework",
-        "agent memory",
-        "agent reasoning",
-        "agent reliability",
-        "agent safety",
-        "agent simulation",
-        "agent society",
-        "agent specialization",
-        "agent system",
-        "agent tool use",
-        "agent training",
-        "agent-awareness",
-        "agent-based simulation",
-        "agent-centric benchmark",
-        "agent-to-agent protocol",
-        "agentic",
-        "agentic ai",
-        "agentic augmentation",
+        #"agent benchmark",
+        #"agent evaluation",
         "agentic coding",
-        "agentic collaboration",
-        "agentic data synthesis",
-        "agentic framwork",
-        "agentic learning",
-        "agentic llm",
-        "agentic misalignment",
-        "agentic multi-turn reasoning",
-        "agentic multimodal model",
-        "agentic rag",
-        "agentic reasoning",
-        "agentic reinforcement learning",
-        "agentic rl",
-        "agentic search",
-        "agentic serving",
-        "agentic simulation",
-        "agentic system",
-        "agentic systems",
-        "agentic task",
-        "agentic training",
-        "agentic workflow",
-        "agentic workflows",
-        "agentless",
-        "agents",
-        "agents with memory",
-        "ai agent",
-        "ai agents",
-        "app agent",
-        "automated code repair",
-        "autonomous agent",
-        "autonomous agents",
-        "benchmarks for agents",
-        "browser-use agent",
-        "chart-to-code generation",
-        "code agent",
-        "code generation",
-        "code synthesis",
-        "coding agent",
-        "coding agent benchmark",
+        #"benchmarks for agents",
         "coding agents",
-        "computer use",
-        "computer use agent",
-        "computer use agents",
-        "computer use-agent",
-        "computer-use agent",
-        "computer-use agents",
-        "computer-using agent",
-        "computer-using agents",
-        "constraint-aware tool use",
-        "cooperative multi-agent rl",
-        "cuda code generation",
-        "data agent",
-        "data science agents",
-        "database agents",
-        "deep research agent",
-        "deep search agent",
-        "digital agents",
-        "doctor agent",
-        "earth-agent",
-        "embodied agent",
-        "embodied agents",
-        "function calling",
-        "generalist agent",
-        "generative agents",
-        "geometry agent prover",
-        "gui agent",
-        "gui agent safety",
-        "gui agents",
-        "heterogeneous agent reinforcement learning",
-        "heterogeneous agents",
-        "human debugging",
-        "human-agent cooperation",
-        "human-agent interaction",
-        "inter-agent communication",
-        "language agent",
-        "language agents",
-        "language model agents",
-        "large language models for code generation",
-        "llm agent",
-        "llm agents",
-        "llm based agent",
-        "llm search agents",
-        "llm tool use",
-        "llm-based agent",
-        "llm-based agent systems",
-        "llm-based agents",
-        "llm/vlm agent",
-        "lm agent",
-        "long-horizon agent",
-        "long-horizon agents",
-        "medical agent",
-        "medical agents",
-        "memory agents benchmark",
-        "mobile agent",
-        "mobile agents",
-        "mobile gui agent",
-        "mobile-agent",
-        "model debugging",
-        "multi agent",
-        "multi agent reinforcement learning",
-        "multi agent system",
-        "multi agent systems",
-        "multi-agent",
-        "multi-agent collaboration",
-        "multi-agent communication",
-        "multi-agent coordination",
-        "multi-agent debate",
-        "multi-agent discussion",
-        "multi-agent framework",
-        "multi-agent imitation learning",
-        "multi-agent llm",
-        "multi-agent llm systems",
-        "multi-agent llms",
-        "multi-agent optimization",
-        "multi-agent orchestration",
-        "multi-agent react",
-        "multi-agent reinforcement learning",
-        "multi-agent simulation",
-        "multi-agent system",
-        "multi-agent systems",
-        "multi-agent systems (mas)",
-        "multi-agent system，large language model，evidence-based reasoning",
-        "multi-agent traffic simulation",
-        "multi-modal agent",
-        "multi-modal embodied agent",
-        "multi-modal large language agent",
-        "multi-social-agent self-distillation",
-        "multi-turn tool use",
-        "multiagent systems",
-        "multimodal agent",
-        "multimodal agents",
-        "multimodal code generation",
-        "neural program synthesis",
-        "neurosymbolic agent",
-        "proactive agent",
-        "proactive agents",
-        "program synthesis",
-        "real-world github issues",
-        "reasoning scaffolding",
-        "rebuttal agent",
+        #"long-horizon agent",
+        #"long-horizon agents",
+        #"multi-agent reinforcement learning",
         "repository generation",
         "research agents",
-        "robotic tool use",
-        "role-playing character agent",
-        "role-playing language agents",
-        "runtime code execution",
-        "safe multi-agent reinforcement learning",
-        "scalable tool use",
-        "science agents",
-        "search agent",
-        "secure code generation",
-        "self-evolving agent",
         "software engineering",
-        "spatial agent",
         "swe agent",
         "swe-agent",
-        "tool agent",
-        "tool use",
-        "tool use evaluation",
-        "tool-augmented agents",
-        "tool-augmented llms",
-        "tool-augmented lms",
-        "tool-augmented reasoning",
-        "tool-use",
-        "tool-use alignment",
-        "tool-use large language model",
-        "tool-using agent",
-        "verifiable code generation",
-        "verifiable coding agents",
-        "videoagenttrek",
-        "vision centric agents",
-        "vlm agent",
-        "web agent",
-        "web agents",
-        "webagent",
-        "Static analysis",
-        "Continous integration",
-        "Test case generation",
-        "Code search",
-        "Compiler",
-        "Complier optimisation",
     ]
     kw_1 = [kw.lower() for kw in kw_1]
     len(kw_1)
@@ -258,191 +64,35 @@ def _():
 def _():
     # List 2 – Reinforcement Learning & Post-training
     kw_2 = [
-        "action free offline to online reinforcement learning",
-        "actor-critic",
-        "adversarial imitation learning",
-        "adversarial reward learning",
-        "adversarial rl",
         "agentic reinforcement learning",
         "agentic rl",
-        "automatic reward design",
-        "batch reinforcement learning",
-        "behavioral cloning",
-        "bi-level reinforcement learning",
-        "black-box reward optimization",
-        "constrained reinforcement learning",
-        "continual instruction tuning",
-        "continual reinforcement learning",
-        "continuous-time reinforcement learning",
-        "convex reinforcement learning",
-        "critique reinforcement learning",
-        "cross-domain reinforcement learning",
-        "curriculum learning",
-        "deep reinforcement learning",
-        "deep rl",
-        "delayed reinforcement learning",
-        "deterministic policy gradient",
-        "direct preference optimization",
-        "direct preference optimization (dpo)",
-        "distributed reinforcement learning",
-        "distributional reinforcement learning",
-        "domain-specific sft",
-        "double q-learning",
-        "dpo",
-        "druggability‑tailored preference optimization",
-        "dual critic reinforcement learning",
-        "erasable reinforcement learning",
-        "flow actor-critic",
-        "forgetting-augmented reinforcement learning",
-        "generative adversarial imitation learning",
-        "generative process reward model",
-        "generative reward model",
-        "goal-conditioned reinforcement learning",
         "group relative policy optimization (grpo)",
         "grpo",
-        "heterogeneous agent reinforcement learning",
-        "hierarchial reinforcement learning",
-        "hierarchical reinforcement learning",
-        "hierarchical rl",
-        "hybrid rewards for reinforcement learning",
-        "image reward model",
-        "imitation learning",
-        "imitation learning for robotics",
-        "in-context reinforcement learning",
-        "instruction tuning",
-        "inverse reinforcement learning",
-        "language model post-training",
-        "llm fine-tuning (sft",
-        "llm post-training",
-        "llm sft",
-        "meta reinforcement learning",
-        "meta-reinforcement learning",
-        "model based reinforcement learning",
-        "model-based reinforcement learning",
-        "model-based rl",
-        "model-basedreinforcement learning",
         "multi agent reinforcement learning",
-        "multi-agent imitation learning",
         "multi-agent reinforcement learning",
         "multi-objective reinforcement learning",
         "multi-objective reinforcement learning (morl)",
-        "multi-task reinforcement learning",
-        "multimodal process reward model",
         "multimodal reinforcement learning",
-        "multimodal reward model",
-        "non-stationary reinforcement learning",
-        "off-policy rl",
         "off-policy rlvr",
-        "offline goal-conditioned reinforcement learning",
-        "offline imitation learning",
-        "offline reinforcement learning",
-        "offline rl",
-        "offline safe reinforcement learning",
-        "offline-to-online reinforcement learning",
-        "on-policy",
-        "on-policy actor-critic",
-        "on-policy optimization",
-        "on-policy sampling",
-        "online dpo",
-        "online reinforcement learning",
-        "opponent shaping",
-        "pluralistic reward modeling",
-        "policy gradient",
-        "policy gradient learning",
-        "policy gradient methods",
-        "policy gradients",
-        "post-training",
-        "post-training compression",
-        "post-training quantization",
-        "ppo",
-        "preference based reinforcement learning",
-        "preference learning",
-        "preference optimization",
-        "preference-based reinforcement learning",
-        "process reward",
         "process reward model",
         "process reward modeling",
         "process reward models",
-        "q-learning",
-        "ranking and preference learning",
         "reinfocement learning with verifiable reward",
-        "reinforcement learning",
-        "reinforcement learning (rl)",
-        "reinforcement learning fine-tuning",
-        "reinforcement learning finetuning",
         "reinforcement learning for language models",
         "reinforcement learning for llms",
-        "reinforcement learning from human feedback",
-        "reinforcement learning from human feedback (rlhf)",
-        "reinforcement learning from offline data",
         "reinforcement learning from verifiable rewards",
-        "reinforcement learning from verifier rewards",
-        "reinforcement learning specifications",
-        "reinforcement learning theory",
-        "reinforcement learning with human feedback",
-        "reinforcement learning with human preference",
         "reinforcement learning with verifiable reward",
         "reinforcement learning with verifiable reward (rlvr)",
         "reinforcement learning with verifiable rewards",
-        "reinforcement learning，image aesthetic assessment",
-        "reward for reinforcement learning",
         "reward hacking",
         "reward hacking detection",
-        "reward hacking prevention",
-        "reward learning",
-        "reward model",
-        "reward modeling",
-        "reward modeling as reasoning",
-        "reward models",
-        "reward shaping",
         "reward-free reinforcement learning",
-        "risk-sensitive reinforcement learning",
-        "rl finetuning",
-        "rl finetuning of llms",
         "rl for llms",
-        "rl from verifiable rewards",
-        "rlaif",
-        "rlhf",
-        "rlhf training dynamics",
         "rlvr",
-        "robot imitation learning",
-        "robust reinforcement learning",
-        "safe multi-agent reinforcement learning",
-        "safe reinforcement learing",
-        "safe reinforcement learning",
         "sample-efficient reinforcement learning",
-        "self-imitation learning",
-        "self-play",
         "self-play optimization",
-        "sft",
-        "skill-based reinforcement learning",
-        "soft actor-critic (sac)",
-        "stable reinforcement learning",
-        "support constraint",
         "test-time reinforcement learning",
-        "theory of reinforcement learning",
-        "token-level policy gradients reshape",
-        "tool-call reward model",
-        "unsupervised reinforcement learning",
-        "value function",
-        "value function estimation",
-        "value function factorization",
-        "zero-shot reinforcement learning",
-        "MDP",
-        "POMDP",
-        "Bandit",
-        "Multi-armed bandit",
-        "Contextual bandit",
-        "Combinatorial multi-armed bandit",
-        "Combinatorial semi-bandits",
-        "Monte Carlo",
-        "Temporal difference",
-        "Bellman equation",
         "Advantage estimation",
-        "Entropy regularisation",
-        "Off-policy",
-        "Policy optimisation",
-        "Intrinsic motivation",
     ]
     kw_2 = [kw.lower() for kw in kw_2]
     len(kw_2)
@@ -453,92 +103,29 @@ def _():
 def _():
     # List 3 – Inference Time Scaling & Optimization
     kw_3 = [
-        "activation quantization",
-        "adaptive compute",
-        "attention-aware kv cache update",
-        "auto think",
-        "beam search",
         "best-of-n",
         "chain of thought",
         "chain of thoughts",
         "chain-of-thought",
         "chain-of-thought (cot)",
-        "chain-of-thought prompting",
         "chain-of-thought reasoning",
         "compute budget allocation",
         "context parallel machenism",
         "cot",
-        "cot monitoring",
         "cot reasoning",
-        "early exit",
-        "efficient llm inference",
-        "generation chain-of-thought",
-        "grounded chain-of-thought",
-        "inference optimization",
-        "inference scaling",
-        "inference time",
         "inference time techniques",
         "inference-time adaptation",
         "inference-time algorithms",
-        "inference-time alignment",
-        "inference-time compute",
-        "inference-time control",
-        "inference-time improvement",
-        "inference-time knowledge integration",
-        "inference-time method",
-        "inference-time optimization",
         "inference-time scaling",
-        "interleaved chain-of-thought",
-        "joint model compression",
-        "kv cache",
-        "kv cache compression",
-        "kv cache eviction",
-        "kv cache quantization",
-        "kv cache retrieval",
-        "kv cache subselection",
-        "kv compression",
-        "latent chain-of-thought",
-        "layer-aware kv cache update",
-        "llm decoding",
-        "llm inference",
-        "llm inference acceleration",
-        "llm inference optimization",
-        "long chain of thought",
-        "long chain-of-thought",
-        "long cot distillation",
-        "long cots",
-        "long-cot reasoning",
-        "majority voting",
-        "model compression",
-        "model quantization",
+        "inference-time scaling",
         "multi-modal chain-of-thought",
         "multimodal interleaved chain-of-thought (cot)",
-        "multimodal large language model；chain-of-thought",
-        "parallel decoding",
-        "post training quantization",
-        "post-training quantization",
-        "quantization",
-        "reasoning scaling",
         "scaling test-time compute",
-        "self-consistency",
-        "soft best-of-n",
-        "soft-best-of-n",
-        "spatial chain-of-thought",
-        "speculative decoding",
         "test time compute",
         "test time scaling",
         "test-time compute",
         "test-time scaling",
-        "unfaithful chain-of-thought",
-        "vector-quantization",
         "visual chain of thought",
-        "sampling",
-        "Top-k sampling",
-        "Top-p",
-        "Nucleus sampling",
-        "Contrastive decoding",
-        "Batch decoding",
-        "GPTQ",
     ]
     kw_3 = [kw.lower() for kw in kw_3]
     len(kw_3)
@@ -595,9 +182,6 @@ def _():
         "Cuda kernels",
         "Distributed computing",
         "Distributed computing",
-        "Checkpoint merging",
-        "Parallelism",
-        "Task parallelism",
     ]
     kw_4 = [kw.lower() for kw in kw_4]
     len(kw_4)
@@ -1242,7 +826,7 @@ def _():
 
 @app.cell
 def _():
-    df_all = pl.read_parquet("iclr_2026_scored.parquet")
+    df_all = pl.read_parquet("iclr_2026_scored.parquet")#.filter(pl.col('primary_area') != 'datasets and benchmarks')
     print(f"Loaded {df_all.shape[0]} rows × {df_all.shape[1]} columns")
     return (df_all,)
 
@@ -1266,12 +850,8 @@ def _(df_all):
     BENCH_AREA = "datasets and benchmarks"
     df_bench = df_all.filter(pl.col("primary_area") == BENCH_AREA)
     df = df_all.filter(pl.col("primary_area") != BENCH_AREA)
-    print(
-        f"Datasets & Benchmarks: {df_bench.shape[0]} papers ({df_bench.shape[0] / df_all.shape[0] * 100:.1f}%)"
-    )
-    print(
-        f"Remaining for analysis: {df.shape[0]} papers ({df.shape[0] / df_all.shape[0] * 100:.1f}%)"
-    )
+    print(f"Datasets & Benchmarks: {df_bench.shape[0]} papers ({df_bench.shape[0] / df_all.shape[0] * 100:.1f}%)")
+    print(f"Remaining for analysis: {df.shape[0]} papers ({df.shape[0] / df_all.shape[0] * 100:.1f}%)")
     return df, df_bench
 
 
@@ -1291,14 +871,10 @@ def _(df_all, df_bench, kw_1, kw_2, kw_3, kw_4, kw_5, kw_6, kw_7, kw_8):
     bench_rows = []
     for name, kws in bench_kw_lists.items():
         in_cat_all = df_all.filter(
-            pl.col("keywords")
-            .list.eval(pl.element().str.to_lowercase().is_in(kws))
-            .list.any()
+            pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kws)).list.any()
         ).shape[0]
         in_cat_bench = df_bench.filter(
-            pl.col("keywords")
-            .list.eval(pl.element().str.to_lowercase().is_in(kws))
-            .list.any()
+            pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kws)).list.any()
         ).shape[0]
         bench_rows.append(
             {
@@ -1360,88 +936,56 @@ def _():
 
 @app.cell
 def _(df, kw_1):
-    df_1 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_1))
-        .list.any()
-    )
+    df_1 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_1)).list.any())
     df_1
     return (df_1,)
 
 
 @app.cell
 def _(df, kw_2):
-    df_2 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_2))
-        .list.any()
-    )
+    df_2 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_2)).list.any())
     df_2
     return (df_2,)
 
 
 @app.cell
 def _(df, kw_3):
-    df_3 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_3))
-        .list.any()
-    )
+    df_3 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_3)).list.any())
     df_3
     return (df_3,)
 
 
 @app.cell
 def _(df, kw_4):
-    df_4 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_4))
-        .list.any()
-    )
+    df_4 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_4)).list.any())
     df_4
     return (df_4,)
 
 
 @app.cell
 def _(df, kw_5):
-    df_5 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_5))
-        .list.any()
-    )
+    df_5 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_5)).list.any())
     df_5
     return (df_5,)
 
 
 @app.cell
 def _(df, kw_6):
-    df_6 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_6))
-        .list.any()
-    )
+    df_6 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_6)).list.any())
     df_6
     return (df_6,)
 
 
 @app.cell
 def _(df, kw_7):
-    df_7 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_7))
-        .list.any()
-    )
+    df_7 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_7)).list.any())
     df_7
     return (df_7,)
 
 
 @app.cell
 def _(df, kw_8):
-    df_8 = df.filter(
-        pl.col("keywords")
-        .list.eval(pl.element().str.to_lowercase().is_in(kw_8))
-        .list.any()
-    )
+    df_8 = df.filter(pl.col("keywords").list.eval(pl.element().str.to_lowercase().is_in(kw_8)).list.any())
     df_8
     return (df_8,)
 
@@ -1503,6 +1047,7 @@ def _():
         """Standardize a column to zero mean, unit variance."""
         return (col - col.mean()) / col.std()
 
+
     def compute_local_scores(subset: pl.DataFrame) -> pl.DataFrame:
         """Recompute 4 archetype scores using category-LOCAL z-scores."""
         if subset.shape[0] < 10:
@@ -1540,14 +1085,11 @@ def _():
             )
             .fill_nan(0.0)
             .alias("local_controversial"),
-            (
-                _z(pl.col("rating_mean")) * 0.40
-                - _z(pl.col("rating_std")) * 0.30
-                + _z(pl.col("confidence_mean")) * 0.30
-            )
+            (_z(pl.col("rating_mean")) * 0.40 - _z(pl.col("rating_std")) * 0.30 + _z(pl.col("confidence_mean")) * 0.30)
             .fill_nan(0.0)
             .alias("local_consensus"),
         )
+
 
     def diversified_top_n_cat(
         scored_df: pl.DataFrame,
@@ -1569,6 +1111,7 @@ def _():
             if cl is not None:
                 cluster_counts[cl] = cluster_counts.get(cl, 0) + 1
         return pl.DataFrame(selected)
+
 
     def format_paper_cat(row: dict, reason: str) -> str:
         """Format a paper for display."""
@@ -1608,17 +1151,9 @@ def _(CATEGORIES):
         if _n == 0:
             continue
         oral_pct = (_sub.filter(pl.col("status") == "Oral").shape[0] / _n) * 100
-        kw_col = (
-            "canonical_keywords" if "canonical_keywords" in _sub.columns else "keywords"
-        )
-        kw_flat = (
-            _sub.select(pl.col(kw_col).explode().str.to_lowercase())
-            .to_series()
-            .drop_nulls()
-        )
-        top_kw = ", ".join(
-            kw_flat.value_counts(sort=True).head(3).get_column(kw_flat.name).to_list()
-        )
+        kw_col = "canonical_keywords" if "canonical_keywords" in _sub.columns else "keywords"
+        kw_flat = _sub.select(pl.col(kw_col).explode().str.to_lowercase()).to_series().drop_nulls()
+        top_kw = ", ".join(kw_flat.value_counts(sort=True).head(3).get_column(kw_flat.name).to_list())
         rows.append(
             {
                 "category": _cat["short"],
@@ -1693,7 +1228,7 @@ def _(
         picks: list[dict] = []
 
         budget = [
-            ("local_top_overall", 3, None, "Top overall (local)"),
+            ("local_top_overall", 8, None, "Top overall (local)"),
             ("local_hidden_gem", 2, "Poster", "Hidden gem (local)"),
             ("local_controversial", 2, None, "Controversial (local)"),
             ("local_consensus", 3, None, "Consensus standout (local)"),
@@ -1768,9 +1303,7 @@ def _(CATEGORIES, df):
         "score_area_leader",
         "score_consensus",
     ]
-    arch_labels = [
-        _c.replace("score_", "").replace("_", " ").title() for _c in arch_cols
-    ]
+    arch_labels = [_c.replace("score_", "").replace("_", " ").title() for _c in arch_cols]
     thresholds = {_c: df[_c].quantile(0.80) for _c in arch_cols}
 
     hm_data: list[list[float]] = []
@@ -1836,31 +1369,17 @@ def _(CATEGORIES, df):
         col = f"in_cat_{_idx}"
         cat_col_names.append(col)
         ids = set(CATEGORIES[_idx]["df"]["openreview_id"].to_list())
-        membership = membership.with_columns(
-            pl.col("openreview_id").is_in(ids).alias(col)
-        )
-    membership = membership.with_columns(
-        pl.sum_horizontal(*cat_col_names).alias("n_categories")
-    )
-    print(
-        f"Papers in at least 1 category: {membership.filter(pl.col('n_categories') >= 1).shape[0]}"
-    )
-    print(
-        f"Papers in 2+ categories: {membership.filter(pl.col('n_categories') >= 2).shape[0]}"
-    )
-    print(
-        f"Papers in 3+ categories: {membership.filter(pl.col('n_categories') >= 3).shape[0]}"
-    )
+        membership = membership.with_columns(pl.col("openreview_id").is_in(ids).alias(col))
+    membership = membership.with_columns(pl.sum_horizontal(*cat_col_names).alias("n_categories"))
+    print(f"Papers in at least 1 category: {membership.filter(pl.col('n_categories') >= 1).shape[0]}")
+    print(f"Papers in 2+ categories: {membership.filter(pl.col('n_categories') >= 2).shape[0]}")
+    print(f"Papers in 3+ categories: {membership.filter(pl.col('n_categories') >= 3).shape[0]}")
     return cat_col_names, membership
 
 
 @app.cell
 def _(CATEGORIES, CAT_NAMES, cat_col_names, membership):
-    grouped = (
-        membership.group_by(cat_col_names)
-        .agg(pl.len().alias("count"))
-        .sort("count", descending=True)
-    )
+    grouped = membership.group_by(cat_col_names).agg(pl.len().alias("count")).sort("count", descending=True)
     combo_labels: list[str] = []
     combo_counts: list[int] = []
     combo_sets: list[set[int]] = []
@@ -1873,9 +1392,7 @@ def _(CATEGORIES, CAT_NAMES, cat_col_names, membership):
         if len(participating) == 0:
             combo_labels.append("(none)")
         else:
-            combo_labels.append(
-                " & ".join(CAT_NAMES[_i] for _i in sorted(participating))
-            )
+            combo_labels.append(" & ".join(CAT_NAMES[_i] for _i in sorted(participating)))
         combo_counts.append(_row["count"])
         combo_sets.append(participating)
 
@@ -1886,15 +1403,9 @@ def _(CATEGORIES, CAT_NAMES, cat_col_names, membership):
             print(f"  {cnt:5d}  {_lbl}")
 
     # All multi-category intersections (2+), sorted by n_cats desc then count desc
-    multi = [
-        (_lbl, cnt, _s)
-        for _lbl, cnt, _s in zip(combo_labels, combo_counts, combo_sets)
-        if len(_s) >= 2
-    ]
+    multi = [(_lbl, cnt, _s) for _lbl, cnt, _s in zip(combo_labels, combo_counts, combo_sets) if len(_s) >= 2]
     multi.sort(key=lambda _x: (-len(_x[2]), -_x[1]))
-    print(
-        f"\nMulti-category intersections ({len(multi)} groups, {sum(_x[1] for _x in multi)} papers):"
-    )
+    print(f"\nMulti-category intersections ({len(multi)} groups, {sum(_x[1] for _x in multi)} papers):")
     for _lbl, cnt, _s in multi:
         print(f"  {cnt:5d}  ({len(_s)} cats)  {_lbl}")
     return combo_counts, combo_labels, combo_sets
@@ -1925,13 +1436,7 @@ def _(
 
     # Color bars by number of participating categories
     bar_colors = [
-        "#c0392c"
-        if len(_s) >= 4
-        else "#e67e22"
-        if len(_s) >= 3
-        else "#f39c12"
-        if len(_s) >= 2
-        else "#3498db"
+        "#c0392c" if len(_s) >= 4 else "#e67e22" if len(_s) >= 3 else "#f39c12" if len(_s) >= 2 else "#3498db"
         for _s in bar_sets
     ]
 
@@ -2041,23 +1546,13 @@ def _(CATEGORIES, CAT_NAMES, df, membership):
                 cat_ranks.setdefault(_idx, {})[_oid] = rank
 
     multi_rows = []
-    for _row in df.filter(pl.col("openreview_id").is_in(list(multi_ids))).iter_rows(
-        named=True
-    ):
+    for _row in df.filter(pl.col("openreview_id").is_in(list(multi_ids))).iter_rows(named=True):
         _oid = _row["openreview_id"]
-        n_cats = (
-            multi_mask.filter(pl.col("openreview_id") == _oid)
-            .select("n_categories")
-            .item()
-        )
+        n_cats = multi_mask.filter(pl.col("openreview_id") == _oid).select("n_categories").item()
         cats_in = []
         rinfo: dict[str, int | None] = {}
         for _idx in sorted(CATEGORIES.keys()):
-            is_in = (
-                multi_mask.filter(pl.col("openreview_id") == _oid)
-                .select(f"in_cat_{_idx}")
-                .item()
-            )
+            is_in = multi_mask.filter(pl.col("openreview_id") == _oid).select(f"in_cat_{_idx}").item()
             if is_in:
                 cats_in.append(CAT_NAMES[_idx])
                 rinfo[f"rank_{CAT_NAMES[_idx]}"] = cat_ranks.get(_idx, {}).get(_oid)
@@ -2114,9 +1609,7 @@ def _(CATEGORIES, CAT_NAMES, df_all):
             labels.append("Multi-category")
             details.append(", ".join(CAT_NAMES[_c] for _c in _cats))
 
-    umap_df = df_all.select(
-        "umap_x", "umap_y", "title", "rating_mean", "status"
-    ).with_columns(
+    umap_df = df_all.select("umap_x", "umap_y", "title", "rating_mean", "status").with_columns(
         pl.Series("cat_label", labels),
         pl.Series("categories", details),
     )
@@ -2185,13 +1678,10 @@ def _():
 
 @app.cell
 def _(CATEGORIES, CAT_NAMES, df, format_paper_cat, membership):
-    multi_ids_br = set(
-        membership.filter(pl.col("n_categories") >= 2)["openreview_id"].to_list()
+    multi_ids_br = set(membership.filter(pl.col("n_categories") >= 2)["openreview_id"].to_list())
+    bridge_df = df.filter(pl.col("openreview_id").is_in(list(multi_ids_br)) & pl.col("bridge_ratio").is_not_null()).sort(
+        "bridge_ratio"
     )
-    bridge_df = df.filter(
-        pl.col("openreview_id").is_in(list(multi_ids_br))
-        & pl.col("bridge_ratio").is_not_null()
-    ).sort("bridge_ratio")
 
     id_cats_br: dict[str, list[int]] = {}
     for _idx in sorted(CATEGORIES.keys()):
@@ -2199,16 +1689,12 @@ def _(CATEGORIES, CAT_NAMES, df, format_paper_cat, membership):
             id_cats_br.setdefault(_oid, []).append(_idx)
 
     print(f"Papers in 2+ categories with bridge_ratio: {bridge_df.shape[0]}")
-    print(
-        "\nTop 15 cross-category bridge papers (lowest bridge_ratio = most bridging):"
-    )
+    print("\nTop 15 cross-category bridge papers (lowest bridge_ratio = most bridging):")
     for _i, _row in enumerate(bridge_df.head(15).iter_rows(named=True), 1):
         _oid = _row["openreview_id"]
         _cats = ", ".join(CAT_NAMES[_c] for _c in id_cats_br.get(_oid, []))
         br = _row["bridge_ratio"]
-        print(
-            f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={br:.3f}, cats=[{_cats}]')}"
-        )
+        print(f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={br:.3f}, cats=[{_cats}]')}")
     return
 
 
