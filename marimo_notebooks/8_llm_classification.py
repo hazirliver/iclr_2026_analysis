@@ -10,7 +10,7 @@ with app.setup:
     import polars as pl
     import marimo as mo
 
-    CLASSIFICATION_FILE = Path("classification_results.parquet")
+    CLASSIFICATION_FILE = Path("classification_results_with_reasoning.parquet")
     FEATURES_FILE = Path("iclr_2026_accepted.parquet")
     OUTPUT_FILE = "iclr_2026_classified.parquet"
 

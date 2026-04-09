@@ -156,9 +156,10 @@ async def classify_paper(openreview_id: str, title: str, abstract: str) -> dict:
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_msg},
                     ],
-                    extra_body={"response_format": CLASSIFICATION_SCHEMA},
-                    temperature=0.0,
-                    max_tokens=8192,
+                    extra_body={"response_format": CLASSIFICATION_SCHEMA,
+                                "chat_template_kwargs": {"enable_thinking": False}},
+                    temperature=0.1,
+                    max_tokens=12000,
                 )
             content = resp.choices[0].message.content or ""
             if not content.strip():
