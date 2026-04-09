@@ -1,7 +1,7 @@
 """Classify ICLR 2026 papers via vLLM-served Kimi-K2.5.
 
 Run on GPU VM with vLLM serving:
-  vllm serve moonshotai/Kimi-K2.5 \
+  vllm serve Qwen/Qwen3.5-397B-A17B-FP8 \
     --tensor-parallel-size 8 \
     --max-model-len 8192 \
     --max-num-seqs 256 \
