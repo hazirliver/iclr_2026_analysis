@@ -45,6 +45,16 @@ def _():
     print(f"Loaded {df_all.shape[0]} rows × {df_all.shape[1]} columns")
 
     BENCH_AREA = "datasets and benchmarks"
+    BENCH_CATEGORY = "Datasets & Benchmarks"
+
+    # Override display_category: benchmarks get their own label regardless of LLM output
+    df_all = df_all.with_columns(
+        pl.when(pl.col("primary_area") == BENCH_AREA)
+        .then(pl.lit(BENCH_CATEGORY))
+        .otherwise(pl.col("llm_category"))
+        .alias("display_category")
+    )
+
     df_bench = df_all.filter(
         (pl.col("primary_area") == BENCH_AREA)
         & (pl.col("llm_category") != "UNCLASSIFIED")
@@ -57,7 +67,7 @@ def _():
         f"Benchmark papers: {df_bench.shape[0]} ({df_bench.shape[0] / df_all.shape[0]:.1%})"
     )
     print(f"Main analysis set (excl. benchmarks): {df.shape[0]} papers")
-    return df, df_all, df_bench
+    return BENCH_CATEGORY, df, df_all, df_bench
 
 
 @app.cell
@@ -114,14 +124,14 @@ def _():
 
 
 @app.cell
-def _(df, df_bench):
+def _(BENCH_CATEGORY, df, df_bench):
     SHORT_NAMES = {
         "SWE Agents": "SWE",
         "Inference Optimisation": "Inference",
         "Infrastructure": "Infra",
         "AI for Life Sciences": "Science",
         "Robotics": "Robotics",
-        "Datasets & Benchmarks": "Bench",
+        BENCH_CATEGORY: "Data & Bench",
         "Other": "Other",
     }
 
@@ -131,7 +141,7 @@ def _(df, df_bench):
         "Infra": "#9b59b6",
         "Science": "#1abc9c",
         "Robotics": "#f39c12",
-        "Bench": "#e67e22",
+        "Data & Bench": "#e67e22",
         "Other": "#95a5a6",
         "Unclassified": "#d5d8dc",
     }
@@ -145,16 +155,16 @@ def _(df, df_bench):
         CATEGORIES[cat_name] = {"label": cat_name, "short": short, "df": subset}
 
     # Benchmarks as a standalone category (based on primary_area, not LLM)
-    CATEGORIES["Datasets & Benchmarks"] = {
-        "label": "Datasets & Benchmarks",
-        "short": "Bench",
+    CATEGORIES[BENCH_CATEGORY] = {
+        "label": BENCH_CATEGORY,
+        "short": "Data & Bench",
         "df": df_bench,
     }
 
     for cat_name, cat_data in CATEGORIES.items():
         short = cat_data["short"]
         n_papers = cat_data["df"].shape[0]
-        print(f"  {short:>10s}: {n_papers:4d} papers")
+        print(f"  {short:>12s}: {n_papers:4d} papers")
     return CATEGORIES, COLOR_MAP, SHORT_NAMES
 
 
@@ -627,22 +637,22 @@ def _(COLOR_MAP, SHORT_NAMES, df_all):
         "title",
         "rating_mean",
         "status",
-        "llm_category",
+        "display_category",
         "llm_confidence",
     ).with_columns(
-        pl.when(pl.col("llm_category") == "UNCLASSIFIED")
+        pl.when(pl.col("display_category") == "UNCLASSIFIED")
         .then(pl.lit("Unclassified"))
-        .otherwise(pl.col("llm_category").replace(SHORT_NAMES))
+        .otherwise(pl.col("display_category").replace(SHORT_NAMES))
         .alias("cat_label")
     )
 
     _cat_order = [
         "SWE",
-        "RL",
         "Inference",
         "Infra",
         "Science",
         "Robotics",
+        "Data & Bench",
         "Other",
         "Unclassified",
     ]
@@ -694,16 +704,16 @@ def _(CATEGORIES: dict, df, format_paper_cat):
     ).sort("bridge_ratio")
 
     bridge_by_cat = (
-        bridge_papers.group_by("llm_category")
+        bridge_papers.group_by("display_category")
         .agg(bridge_count=pl.len())
         .join(
             pl.DataFrame(
                 [
-                    {"llm_category": k, "total": v["df"].shape[0]}
+                    {"display_category": k, "total": v["df"].shape[0]}
                     for k, v in CATEGORIES.items()
                 ]
             ),
-            on="llm_category",
+            on="display_category",
         )
         .with_columns(
             bridge_pct=(pl.col("bridge_count") / pl.col("total") * 100).round(1)
@@ -716,7 +726,7 @@ def _(CATEGORIES: dict, df, format_paper_cat):
     print("\nTop 15 bridge papers (lowest bridge_ratio = most bridging):")
     for _i, _row in enumerate(bridge_papers.head(15).iter_rows(named=True), 1):
         br = _row["bridge_ratio"]
-        cat = _row["llm_category"]
+        cat = _row["display_category"]
         print(f"\n{_i}. {format_paper_cat(_row, f'bridge_ratio={br:.3f}, cat={cat}')}")
     return
 
@@ -726,7 +736,7 @@ def _(COLOR_MAP, SHORT_NAMES, df):
     bridge_plot = df.filter(
         pl.col("bridge_ratio").is_not_null()
         & (pl.col("llm_category") != "UNCLASSIFIED")
-    ).with_columns(pl.col("llm_category").replace(SHORT_NAMES).alias("cat_short"))
+    ).with_columns(pl.col("display_category").replace(SHORT_NAMES).alias("cat_short"))
 
     fig_bridge = px.scatter(
         bridge_plot.to_pandas(),
