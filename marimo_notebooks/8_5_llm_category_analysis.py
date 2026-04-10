@@ -571,13 +571,13 @@ def _():
 
 
 @app.cell
-def _(SHORT_NAMES, df):
+def _(SHORT_NAMES, df_all):
     cross = (
-        df.filter(
+        df_all.filter(
             (pl.col("llm_category") != "UNCLASSIFIED")
             & pl.col("llm_category").is_not_null()
         )
-        .with_columns(pl.col("llm_category").replace(SHORT_NAMES).alias("cat_short"))
+        .with_columns(pl.col("display_category").replace(SHORT_NAMES).alias("cat_short"))
         .group_by("cat_short", "primary_area")
         .agg(count=pl.len())
         .with_columns(
@@ -693,11 +693,11 @@ def _():
 
 
 @app.cell
-def _(CATEGORIES: dict, df, format_paper_cat):
-    bridge_threshold = df.filter(pl.col("bridge_ratio").is_not_null())[
+def _(CATEGORIES: dict, df_all, format_paper_cat):
+    bridge_threshold = df_all.filter(pl.col("bridge_ratio").is_not_null())[
         "bridge_ratio"
     ].quantile(0.10)
-    bridge_papers = df.filter(
+    bridge_papers = df_all.filter(
         pl.col("bridge_ratio").is_not_null()
         & (pl.col("bridge_ratio") <= bridge_threshold)
         & (pl.col("llm_category") != "UNCLASSIFIED")
@@ -732,8 +732,8 @@ def _(CATEGORIES: dict, df, format_paper_cat):
 
 
 @app.cell
-def _(COLOR_MAP, SHORT_NAMES, df):
-    bridge_plot = df.filter(
+def _(COLOR_MAP, SHORT_NAMES, df_all):
+    bridge_plot = df_all.filter(
         pl.col("bridge_ratio").is_not_null()
         & (pl.col("llm_category") != "UNCLASSIFIED")
     ).with_columns(pl.col("display_category").replace(SHORT_NAMES).alias("cat_short"))
