@@ -740,6 +740,77 @@ def _(COLOR_MAP, SHORT_NAMES, df):
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
+    ## Export per-category CSVs
+
+    Export all papers per category, sorted by `local_top_overall` descending,
+    into `exports/<category>.csv`.
+    """)
+    return
+
+
+@app.cell
+def _(CATEGORIES: dict, compute_local_scores):
+    EXPORT_COLS = [
+        "site",
+        "title",
+        "abstract",
+        "status",
+        "primary_area",
+        "keywords",
+        "rating",
+        "presentation",
+        "confidence",
+        "soundness",
+        "contribution",
+        "pdf_link",
+        "score_top_overall",
+        "llm_category",
+        "llm_confidence",
+        "llm_reasoning",
+    ]
+
+    def export_category_csvs(
+        categories: dict,
+        out_dir: str = "exports",
+    ) -> Path:
+        """Export one CSV per category sorted by local_top_overall."""
+        out = Path(out_dir)
+        out.mkdir(exist_ok=True)
+
+        for cat_name, cat_data in categories.items():
+            subset = cat_data["df"]
+            if subset.shape[0] == 0:
+                continue
+
+            scored = compute_local_scores(subset)
+
+            export_df = (
+                scored.sort("local_top_overall", descending=True)
+                .with_columns(
+                    pl.col("keywords").list.join(", ").alias("keywords"),
+                    pl.col("rating").list.eval(pl.element().cast(pl.String)).list.join(", ").alias("rating"),
+                    pl.col("presentation").list.eval(pl.element().cast(pl.String)).list.join(", ").alias("presentation"),
+                    pl.col("confidence").list.eval(pl.element().cast(pl.String)).list.join(", ").alias("confidence"),
+                    pl.col("soundness").list.eval(pl.element().cast(pl.String)).list.join(", ").alias("soundness"),
+                    pl.col("contribution").list.eval(pl.element().cast(pl.String)).list.join(", ").alias("contribution"),
+                )
+                .select(EXPORT_COLS + ["local_top_overall"])
+            )
+
+            slug = cat_name.lower().replace(" ", "_")
+            export_df.write_csv(out / f"{slug}.csv")
+            print(f"  {cat_name}: {export_df.shape[0]} rows -> {out / f'{slug}.csv'}")
+
+        print(f"\nExported {len(categories)} category CSVs to {out}/")
+        return out
+
+    export_dir = export_category_csvs(CATEGORIES)
+    return (export_dir,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
     ## Summary
     """)
     return
