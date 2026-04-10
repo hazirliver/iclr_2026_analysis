@@ -45,13 +45,19 @@ def _():
     print(f"Loaded {df_all.shape[0]} rows × {df_all.shape[1]} columns")
 
     BENCH_AREA = "datasets and benchmarks"
-    df_bench = df_all.filter(pl.col("primary_area") == BENCH_AREA)
-    df = df_all.filter(pl.col('llm_category') != 'UNCLASSIFIED')#.filter(pl.col("primary_area") != BENCH_AREA)
+    df_bench = df_all.filter(
+        (pl.col("primary_area") == BENCH_AREA)
+        & (pl.col("llm_category") != "UNCLASSIFIED")
+    )
+    df = df_all.filter(
+        (pl.col("llm_category") != "UNCLASSIFIED")
+        & (pl.col("primary_area") != BENCH_AREA)
+    )
     print(
         f"Benchmark papers: {df_bench.shape[0]} ({df_bench.shape[0] / df_all.shape[0]:.1%})"
     )
-    print(f"Main analysis set: {df.shape[0]} papers")
-    return df, df_all
+    print(f"Main analysis set (excl. benchmarks): {df.shape[0]} papers")
+    return df, df_all, df_bench
 
 
 @app.cell
@@ -108,24 +114,24 @@ def _():
 
 
 @app.cell
-def _(df):
+def _(df, df_bench):
     SHORT_NAMES = {
         "SWE Agents": "SWE",
-        #"RL": "RL",
         "Inference Optimisation": "Inference",
         "Infrastructure": "Infra",
         "AI for Life Sciences": "Science",
         "Robotics": "Robotics",
+        "Datasets & Benchmarks": "Bench",
         "Other": "Other",
     }
 
     COLOR_MAP = {
         "SWE": "#e74c3c",
-        #"RL": "#3498db",
         "Inference": "#2ecc71",
         "Infra": "#9b59b6",
         "Science": "#1abc9c",
         "Robotics": "#f39c12",
+        "Bench": "#e67e22",
         "Other": "#95a5a6",
         "Unclassified": "#d5d8dc",
     }
@@ -137,6 +143,13 @@ def _(df):
         subset = df.filter(pl.col("llm_category") == cat_name)
         short = SHORT_NAMES.get(cat_name, cat_name)
         CATEGORIES[cat_name] = {"label": cat_name, "short": short, "df": subset}
+
+    # Benchmarks as a standalone category (based on primary_area, not LLM)
+    CATEGORIES["Datasets & Benchmarks"] = {
+        "label": "Datasets & Benchmarks",
+        "short": "Bench",
+        "df": df_bench,
+    }
 
     for cat_name, cat_data in CATEGORIES.items():
         short = cat_data["short"]
