@@ -129,19 +129,19 @@ def _(BENCH_CATEGORY, df, df_bench):
         "SWE Agents": "SWE",
         "Inference Optimisation": "Inference",
         "Infrastructure": "Infra",
-        "AI for Life Sciences": "Science",
+        "AI for Life Sciences": "LSHC",
         "Robotics": "Robotics",
         BENCH_CATEGORY: "Data & Bench",
         "Other": "Other",
     }
 
     COLOR_MAP = {
-        "SWE": "#e74c3c",
-        "Inference": "#2ecc71",
-        "Infra": "#9b59b6",
-        "Science": "#1abc9c",
-        "Robotics": "#f39c12",
-        "Data & Bench": "#e67e22",
+        "SWE": "#D55E00",        # vermillion
+        "Inference": "#009E73",  # bluish green
+        "Infra": "#0072B2",      # blue
+        "LSHC": "#CC79A7",    # reddish purple
+        "Robotics": "#F0E442",   # yellow
+        "Data & Bench": "#56B4E9",      # sky blue
         "Other": "#95a5a6",
         "Unclassified": "#d5d8dc",
     }
@@ -828,7 +828,7 @@ def _(CATEGORIES: dict, compute_local_scores):
         return out
 
     export_dir = export_category_csvs(CATEGORIES)
-    return (export_dir,)
+    return
 
 
 @app.cell(hide_code=True)
