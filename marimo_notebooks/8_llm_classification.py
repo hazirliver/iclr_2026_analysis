@@ -213,25 +213,44 @@ def _(df):
         "total", descending=True
     )
     pivot
-    return (cross,)
+    return
 
 
 @app.cell
-def _(cross):
+def _(df):
+    cross_pct = (
+        df.filter(pl.col("llm_category") != "UNCLASSIFIED")
+        .group_by("llm_category", "primary_area")
+        .agg(count=pl.len())
+        .with_columns(
+            pct=pl.col("count") / pl.col("count").sum().over("llm_category") * 100
+        )
+    )
+
     fig_heat = px.density_heatmap(
-        cross.to_pandas(),
+        cross_pct,
         x="llm_category",
         y="primary_area",
-        z="count",
+        z="pct",
         histfunc="sum",
-        title="LLM category vs primary area",
+        title="Primary area distribution within each LLM category",
         color_continuous_scale="YlOrRd",
+        text_auto=".1f",
     )
+
     fig_heat.update_layout(
         height=700,
         xaxis_tickangle=-30,
-        yaxis=dict(categoryorder="total ascending"),
+        coloraxis_colorbar=dict(title="% within category"),
     )
+    fig_heat.update_traces(
+        hovertemplate=(
+            "LLM category: %{x}<br>"
+            "Primary area: %{y}<br>"
+            "Share within category: %{z:.2f}%<extra></extra>"
+        )
+    )
+
     fig_heat
     return
 

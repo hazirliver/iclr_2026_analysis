@@ -26,7 +26,7 @@ from tqdm.asyncio import tqdm
 # ── config ──────────────────────────────────────────────
 VLLM_BASE_URL = "http://localhost:8000/v1"
 MODEL = "Qwen/Qwen3.5-397B-A17B-FP8"
-MAX_CONCURRENT = 16
+MAX_CONCURRENT = 64
 MAX_RETRIES = 3
 
 INPUT_FILE = "iclr_2026_accepted.parquet"
@@ -38,7 +38,6 @@ sem = asyncio.Semaphore(MAX_CONCURRENT)
 # ── categories & schema ─────────────────────────────────
 CATEGORIES = [
     "SWE Agents",
-    "RL",
     "Inference Optimisation",
     "Infrastructure",
     "AI for Life Sciences",
@@ -73,12 +72,11 @@ You must choose the single most relevant category from the predefined list below
 
 Categories:
 1. SWE Agents — coding agents, agentic coding, software engineering agents, SWE-agent, repository-level code generation, research agents that write or debug code
-2. RL — reinforcement learning for language models (RLVR, GRPO, self-play optimization), process reward models, reward hacking, test-time RL, multi-agent RL, sample-efficient RL, advantage estimation
 3. Inference Optimisation — test-time compute scaling, chain-of-thought reasoning, inference-time adaptation/algorithms, compute budget allocation, best-of-N, scaling test-time compute, visual/multimodal CoT
-4. Infrastructure — distributed training, GPU/CUDA/Triton kernels, memory-efficient training, gradient checkpointing/compression, sequence parallelism, federated learning, continual pretraining, batch size scheduling, hardware acceleration, ML platforms
-5. AI for Life Sciences — biology, medicine, drug discovery, genomics, healthcare applications, molecular modeling, protein folding, scientific simulation, materials science
+4. Infrastructure — distributed training, fully sharded data parallel (fsdp), GPU/CUDA/Triton kernels, memory-efficient training, gradient checkpointing/compression, sequence parallelism, federated learning, hardware acceleration, gpu-parallel optimization, offloading  
+5. AI for Life Sciences & Healthcare — biology, medicine, drug discovery, genomics, healthcare applications, molecular modeling, protein folding, neuroscience, cognitive science
 6. Robotics — physical robots, control systems, embodied AI, manipulation, navigation in the real world, autonomous driving, sim-to-real transfer
-7. Other — papers that do not clearly fit any of the above 6 specific categories (e.g., safety, fairness, media generation, pure theory, optimization, graph learning, representation learning, diffusion models, multimodal generation)
+7. Other — papers that do not clearly fit any of the above 6 specific categories (e.g., safety, fairness, media generation, pure theory, training optimization, graph learning, representation learning, etc.)
 
 Rules:
 - Assign exactly ONE category.
@@ -88,8 +86,8 @@ Rules:
   - If the novelty is in RL → RL
   - If the novelty is in robotics → Robotics
 - Use "Other" only when the paper genuinely does not fit any of the 6 specific categories.
-- If uncertain between a specific category and "Other", prefer the specific category.
-- Keep reasoning to 1-2 sentences maximum. Do NOT repeat the title or abstract.
+- If uncertain between a specific category and "Other", prefer "Other".
+- Keep reasoning to 2 sentences maximum. Do NOT repeat the title or abstract.
 - Reply strictly adhering to the JSON strict schema:
     ```
     {
@@ -104,7 +102,6 @@ Rules:
           "type": "string",
           "enum": [
             "SWE Agents",
-            "RL",
             "Inference Optimisation",
             "Infrastructure",
             "AI for Life Sciences",
@@ -163,9 +160,8 @@ async def classify_paper(openreview_id: str, title: str, abstract: str) -> dict:
                     ],
                     extra_body={
                         "response_format": CLASSIFICATION_SCHEMA,
-                        "chat_template_kwargs": {"enable_thinking": False},
                     },
-                    temperature=0.1,
+                    temperature=0.0,
                     max_tokens=12000,
                 )
             content = resp.choices[0].message.content or ""

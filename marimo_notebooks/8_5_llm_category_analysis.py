@@ -40,13 +40,13 @@ def _():
 @app.cell
 def _():
     df_all = pl.read_parquet("iclr_2026_scored.parquet")
-    clf = pl.read_parquet("classification_results.parquet")
+    clf = pl.read_parquet("classification_results_with_reasoning.parquet")
     df_all = df_all.join(clf, on="openreview_id", how="left")
     print(f"Loaded {df_all.shape[0]} rows × {df_all.shape[1]} columns")
 
     BENCH_AREA = "datasets and benchmarks"
     df_bench = df_all.filter(pl.col("primary_area") == BENCH_AREA)
-    df = df_all.filter(pl.col("primary_area") != BENCH_AREA)
+    df = df_all.filter(pl.col('llm_category') != 'UNCLASSIFIED')#.filter(pl.col("primary_area") != BENCH_AREA)
     print(
         f"Benchmark papers: {df_bench.shape[0]} ({df_bench.shape[0] / df_all.shape[0]:.1%})"
     )
@@ -111,7 +111,7 @@ def _():
 def _(df):
     SHORT_NAMES = {
         "SWE Agents": "SWE",
-        "RL": "RL",
+        #"RL": "RL",
         "Inference Optimisation": "Inference",
         "Infrastructure": "Infra",
         "AI for Life Sciences": "Science",
@@ -121,7 +121,7 @@ def _(df):
 
     COLOR_MAP = {
         "SWE": "#e74c3c",
-        "RL": "#3498db",
+        #"RL": "#3498db",
         "Inference": "#2ecc71",
         "Infra": "#9b59b6",
         "Science": "#1abc9c",
@@ -346,9 +346,9 @@ def _(
         picks: list[dict] = []
 
         budget = [
-            ("local_top_overall", 8, None, "Top overall (local)"),
-            ("local_hidden_gem", 1, "Poster", "Hidden gem (local)"),
-            ("local_controversial", 1, None, "Controversial (local)"),
+            ("local_top_overall", 10, None, "Top overall (local)"),
+            ("local_hidden_gem", 0, "Poster", "Hidden gem (local)"),
+            ("local_controversial", 0, None, "Controversial (local)"),
             ("local_consensus", 0, None, "Consensus standout (local)"),
         ]
         for sc, want, sf, label in budget:
@@ -396,7 +396,7 @@ def _(df):
 
 @app.cell
 def _(df):
-    df.filter(pl.col("site") == "https://openreview.net/forum?id=hPOImB2mZW").select(
+    df.filter(pl.col("site") == "https://openreview.net/forum?id=DM0Y0oL33T").select(
         ["llm_confidence", "llm_reasoning", "llm_category", "site"]
     )
     return
@@ -557,25 +557,39 @@ def _(SHORT_NAMES, df):
         .with_columns(pl.col("llm_category").replace(SHORT_NAMES).alias("cat_short"))
         .group_by("cat_short", "primary_area")
         .agg(count=pl.len())
-        .sort("count", descending=True)
+        .with_columns(
+            pct=pl.col("count") / pl.col("count").sum().over("cat_short") * 100
+        )
     )
 
     fig_cross = px.density_heatmap(
         cross.to_pandas(),
         x="cat_short",
         y="primary_area",
-        z="count",
+        z="pct",
         histfunc="sum",
-        title="LLM category vs OpenReview primary area",
+        title="Primary area distribution within each LLM category",
         color_continuous_scale="YlOrRd",
+        text_auto=".1f",
     )
+
     fig_cross.update_layout(
         height=700,
         xaxis_tickangle=-30,
         xaxis_title="LLM Category",
         yaxis_title="Primary Area",
+        coloraxis_colorbar=dict(title="% within category"),
         yaxis=dict(categoryorder="total ascending"),
     )
+
+    fig_cross.update_traces(
+        hovertemplate=(
+            "LLM category: %{x}<br>"
+            "Primary area: %{y}<br>"
+            "Share within category: %{z:.2f}%<extra></extra>"
+        )
+    )
+
     fig_cross.write_html(str(FIGURES / "llm_vs_primary_area.html"))
     fig_cross
     return
@@ -635,7 +649,7 @@ def _(COLOR_MAP, SHORT_NAMES, df_all):
     for trace in fig_umap.data:
         if trace.name in ("Other", "Unclassified"):
             trace.marker.opacity = 1
-            # trace.marker.size = 4
+            trace.marker.size = 4
             trace.marker.color = COLOR_MAP.get(trace.name, "#a9adb7")
     fig_umap.update_layout(height=700, width=1100)
     fig_umap.write_html(str(FIGURES / "llm_umap_by_category.html"))
